@@ -1648,6 +1648,18 @@
 
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // --- GPU Texture Keep-Alive Hack ---
+            if (isMobile) {
+                ctx.save();
+                ctx.globalAlpha = 0.01; // Practically invisible
+                // Draw a tiny 1x1 pixel of your sprite sheets off-screen
+                ctx.drawImage(assets.images.walk, 0, 0, 1, 1, -10, -10, 1, 1);
+                ctx.drawImage(assets.images.melee, 0, 0, 1, 1, -10, -10, 1, 1);
+                ctx.drawImage(assets.images.idle, 0, 0, 1, 1, -10, -10, 1, 1);
+                ctx.restore();
+            }
+
             ctx.textAlign = "left"; 
 
             let logicalViewW = canvas.width / (renderScale || 1);
