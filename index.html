@@ -1520,55 +1520,57 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             let allAnimsFinished = true;
-            const animDt = Math.min(deltaTime || 0, 30); 
+            if (!isMobile) {
+                const animDt = Math.min(deltaTime || 0, 30); 
 
-            for(let anim of cornerAnims) {
-                const img = assets.images[anim.key];
-                if (img && img.complete && img.naturalWidth > 0 && !anim.finished) {
-                    anim.started = true;
-                }
-                
-                if (anim.started && !anim.finished) {
-                    allAnimsFinished = false;
-                    anim.timer += animDt;
-                    while (anim.timer >= 30) {
-                        anim.timer -= 30;
-                        anim.frame++;
-                        if (anim.frame >= anim.total) {
-                            anim.finished = true;
-                            anim.frame = anim.total - 1; 
-                            break;
+                for(let anim of cornerAnims) {
+                    const img = assets.images[anim.key];
+                    if (img && img.complete && img.naturalWidth > 0 && !anim.finished) {
+                        anim.started = true;
+                    }
+                    
+                    if (anim.started && !anim.finished) {
+                        allAnimsFinished = false;
+                        anim.timer += animDt;
+                        while (anim.timer >= 30) {
+                            anim.timer -= 30;
+                            anim.frame++;
+                            if (anim.frame >= anim.total) {
+                                anim.finished = true;
+                                anim.frame = anim.total - 1; 
+                                break;
+                            }
                         }
+                    } else if (!anim.finished) {
+                        allAnimsFinished = false;
                     }
-                } else if (!anim.finished) {
-                    allAnimsFinished = false;
-                }
-                
-                if (anim.started && !anim.finished) {
-                    const sW = img.width / anim.cols;
-                    const sH = img.height / anim.rows;
-                    const sx = (anim.frame % anim.cols) * sW;
-                    const sy = Math.floor(anim.frame / anim.cols) * sH;
                     
-                    const drawW = sW * anim.scale;
-                    const drawH = sH * anim.scale;
-                    
-                    let drawX = 0, drawY = 0;
-                    const margin = 30;
-                    if (anim.corner === 'BL1') { drawX = canvas.width / 5 - drawW / 2; drawY = canvas.height / 2 - drawH / 2; }
-                    if (anim.corner === 'BL2') { drawX = canvas.width * 2 / 5 - drawW / 2; drawY = canvas.height / 2 - drawH / 2; }
-                    if (anim.corner === 'BL3') { drawX = canvas.width * 3 / 5 - drawW / 2; drawY = canvas.height / 2 - drawH / 2; }
-                    if (anim.corner === 'BL4') { drawX = canvas.width * 4 / 5 - drawW / 2; drawY = canvas.height / 2 - drawH / 2; }
-                    
-                    ctx.save();
-                    if (anim.flip) {
-                        ctx.translate(drawX + drawW, drawY);
-                        ctx.scale(-1, 1);
-                        ctx.drawImage(img, sx, sy, sW, sH, 0, 0, drawW, drawH);
-                    } else {
-                        ctx.drawImage(img, sx, sy, sW, sH, drawX, drawY, drawW, drawH);
+                    if (anim.started && !anim.finished) {
+                        const sW = img.width / anim.cols;
+                        const sH = img.height / anim.rows;
+                        const sx = (anim.frame % anim.cols) * sW;
+                        const sy = Math.floor(anim.frame / anim.cols) * sH;
+                        
+                        const drawW = sW * anim.scale;
+                        const drawH = sH * anim.scale;
+                        
+                        let drawX = 0, drawY = 0;
+                        const margin = 30;
+                        if (anim.corner === 'BL1') { drawX = canvas.width / 5 - drawW / 2; drawY = canvas.height / 2 - drawH / 2; }
+                        if (anim.corner === 'BL2') { drawX = canvas.width * 2 / 5 - drawW / 2; drawY = canvas.height / 2 - drawH / 2; }
+                        if (anim.corner === 'BL3') { drawX = canvas.width * 3 / 5 - drawW / 2; drawY = canvas.height / 2 - drawH / 2; }
+                        if (anim.corner === 'BL4') { drawX = canvas.width * 4 / 5 - drawW / 2; drawY = canvas.height / 2 - drawH / 2; }
+                        
+                        ctx.save();
+                        if (anim.flip) {
+                            ctx.translate(drawX + drawW, drawY);
+                            ctx.scale(-1, 1);
+                            ctx.drawImage(img, sx, sy, sW, sH, 0, 0, drawW, drawH);
+                        } else {
+                            ctx.drawImage(img, sx, sy, sW, sH, drawX, drawY, drawW, drawH);
+                        }
+                        ctx.restore();
                     }
-                    ctx.restore();
                 }
             }
 
