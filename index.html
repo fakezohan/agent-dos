@@ -109,17 +109,7 @@
 
         #orientation-warning h2 {
             margin: 0 0 10px 0;
-            font-size: 36px;
-        }
-
-        .rotate-icon {
-            font-size: 128px;
-            animation: tilt 2s infinite ease-in-out;
-        }
-
-        @keyframes tilt {
-            0%, 100% { transform: rotate(0deg); }
-            50% { transform: rotate(-90deg); }
+            font-size: 24px;
         }
 
         @media screen and (max-aspect-ratio: 1/1), screen and (orientation: portrait) {
@@ -136,8 +126,6 @@
 
     <div id="orientation-warning">
         <h2>Please Rotate Your Device</h2>
-        <br></br>
-        <div class="rotate-icon">🔄📱</div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -389,11 +377,6 @@
                 // 1. Browsers require 'touchend' (a completed tap) to securely unlock Fullscreen and Audio
                 if (e.type === 'touchend') {
                     tryEnterFullscreen();
-                    
-                    if (!musicStarted && assets.audio.bgMusic) {
-                        assets.audio.bgMusic.play().catch(console.warn);
-                        musicStarted = true;
-                    }
                 }
 
                 // 2. Handle Game Over Restart on touchend to prevent accidental instant-restarts
@@ -476,17 +459,9 @@
         window.addEventListener('keydown', (e) => {
             if (gameState === 'TAP_TO_START') {
                 tryEnterFullscreen();
-                if (!musicStarted && assets.audio.bgMusic) {
-                    assets.audio.bgMusic.play().catch(console.warn);
-                    musicStarted = true;
-                }
                 gameState = 'PLAYING';
             }
 
-            if (!musicStarted && assets.audio.bgMusic) {
-                assets.audio.bgMusic.play().catch(console.warn);
-                musicStarted = true;
-            }
             const key = e.key.toLowerCase();
             if (keys.hasOwnProperty(key)) keys[key] = true;
         });
@@ -499,10 +474,6 @@
         window.addEventListener('mousedown', (e) => {
             if (gameState === 'TAP_TO_START') {
                 tryEnterFullscreen();
-                if (!musicStarted && assets.audio.bgMusic) {
-                    assets.audio.bgMusic.play().catch(console.warn);
-                    musicStarted = true;
-                }
                 gameState = 'PLAYING';
             }
         });
@@ -763,9 +734,10 @@
 
             for (let k in keys) keys[k] = false;
 
-            if (musicStarted && assets.audio.bgMusic) {
+            musicStarted = false;
+            if (assets.audio.bgMusic) {
+                assets.audio.bgMusic.pause();
                 assets.audio.bgMusic.currentTime = 0;
-                assets.audio.bgMusic.play().catch(()=>{});
             } 
         }
 
@@ -1042,6 +1014,10 @@
                 if (player.x < pistol.x + pistol.width && pRightEdge > pistol.x && player.y < pistol.y + pistol.height && player.y + player.height > pistol.y) {
                     pistol.pickedUp = true; pistol.ammo = pistol.maxAmmo; 
                     assets.audio.pickup.play().catch(()=>{});
+                    if (!musicStarted && assets.audio.bgMusic) {
+                        assets.audio.bgMusic.play().catch(console.warn);
+                        musicStarted = true;
+                    }
                 }
             }
 
@@ -1601,12 +1577,6 @@
                     gameState = 'TAP_TO_START';
                 } else {
                     gameState = 'PLAYING';
-                    // Attempt to auto-play audio. Note: this might be blocked by browser policy
-                    // until the user interacts with the page via keyboard or mouse clicks.
-                    if (!musicStarted && assets.audio.bgMusic) {
-                        assets.audio.bgMusic.play().catch(console.warn);
-                        musicStarted = true;
-                    }
                 }
             }
 
@@ -1639,8 +1609,9 @@
                     );
                 }
             } else {
-                const pct = totalAssets > 0 ? loadedAssets / totalAssets : 0;
-                ctx.fillText('Loading... ' + Math.floor(pct * 100) + '%', 0, 200);
+                const rawPct = totalAssets > 0 ? loadedAssets / totalAssets : 0;
+                const displayPct = Math.min(100, Math.floor(rawPct * 100));
+                ctx.fillText('Loading... ' + displayPct + '%', 0, 200);
             }
 
             ctx.restore();
