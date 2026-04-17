@@ -899,8 +899,14 @@
                         const wHitX = w.x + hOffX, wHitY = w.y + hOffY, wHitW = w.width - hRedW, wHitH = w.height - hRedH;
 
                         if (startY >= wHitY && startY <= wHitY + wHitH) {
-                            if ((dir === 1 && wHitX > startX) || (dir === -1 && wHitX + wHitW < startX)) {
-                                hits.push({ enemy: w, dist: Math.abs((dir === 1 ? wHitX : wHitX + wHitW) - startX) });
+                            if ((dir === 1 && wHitX + wHitW >= startX) || (dir === -1 && wHitX <= startX)) {
+                                let hitDist = 0;
+                                if (dir === 1 && wHitX > startX) {
+                                    hitDist = wHitX - startX;
+                                } else if (dir === -1 && wHitX + wHitW < startX) {
+                                    hitDist = startX - (wHitX + wHitW);
+                                }
+                                hits.push({ enemy: w, dist: hitDist });
                             }
                         }
                     }
