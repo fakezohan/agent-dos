@@ -153,6 +153,30 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d', { alpha: false });
 
+        // --- Web Audio API Setup ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        let walkSource = null;
+
+        const audioDefaults = {
+            walk: { volume: 0.5, rate: 1.0, loop: true },
+            pickup: { volume: 1.0, rate: 0.8 },
+            jump: { volume: 0.3, rate: 2.0 },
+            roll: { volume: 0.6, rate: 1.0 },
+            shot: { volume: 0.4, rate: 2.0 },
+            laserShot: { volume: 0.2, rate: 1.0 },
+            meleeHit: { volume: 0.2, rate: 3.0 },
+            playerHurt: { volume: 0.4, rate: 3.0 },
+            womanHurt: { volume: 0.4, rate: 3.0 },
+            womanDeath: { volume: 0.7, rate: 2.0 },
+            priestDeath: { volume: 0.7, rate: 2.0 },
+            monkDeath: { volume: 0.7, rate: 1.0 },
+            bearDeath: { volume: 1.0, rate: 2.0 },
+            kfcDeath: { volume: 0.7, rate: 1.0 },
+            armoredWomanHurt: { volume: 0.7, rate: 2.0 },
+            armoredWomanDeath: { volume: 0.7, rate: 1.0 }
+        };
+
         // --- Shared Constants & Magic Numbers ---
         const GAME_CFG = {
             CANVAS_W: 1366,
@@ -258,7 +282,7 @@
         let loadedAssets = 0;
 
         function loadAsset(type, key, src) {
-            return new Promise((resolve, reject) => {
+            return new Promise(async (resolve, reject) => {
                 if (type === 'image') {
                     const img = new Image();
                     img.onload = () => { loadedAssets++; resolve(); };
@@ -266,13 +290,55 @@
                     img.src = src;
                     assets.images[key] = img;
                 } else {
-                    const aud = new Audio();
-                    aud.oncanplaythrough = () => { loadedAssets++; resolve(); };
-                    aud.onerror = () => { console.warn(`Failed to load ${src}`); resolve(); };
-                    aud.src = src;
-                    assets.audio[key] = aud;
+                    if (key === 'bgMusic') {
+                        const aud = new Audio();
+                        aud.oncanplaythrough = () => { loadedAssets++; resolve(); };
+                        aud.onerror = () => { console.warn(`Failed to load ${src}`); resolve(); };
+                        aud.src = src;
+                        assets.audio[key] = aud;
+                    } else {
+                        try {
+                            const response = await fetch(src);
+                            const arrayBuffer = await response.arrayBuffer();
+                            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                            assets.audio[key] = audioBuffer;
+                            loadedAssets++;
+                            resolve();
+                        } catch (e) {
+                            console.warn(`Failed to load Web Audio ${src}`, e);
+                            loadedAssets++;
+                            resolve();
+                        }
+                    }
                 }
             });
+        }
+
+        function playSound(key, customRate = null) {
+            if (!musicStarted || !assets.audio[key]) return null;
+
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const buffer = assets.audio[key];
+            if (!(buffer instanceof AudioBuffer)) return null; 
+
+            const source = audioCtx.createBufferSource();
+            source.buffer = buffer;
+
+            const gainNode = audioCtx.createGain();
+            const config = audioDefaults[key] || { volume: 1.0, rate: 1.0, loop: false };
+            
+            gainNode.gain.value = config.volume;
+            source.playbackRate.value = customRate !== null ? customRate : config.rate;
+            source.loop = config.loop || false;
+
+            source.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            source.start(0);
+
+            return source; 
         }
 
         async function preloadGame() {
@@ -384,26 +450,22 @@
             let handledSwapTouches = new Set();
 
             const processTouches = (e) => {
-                // 1. Browsers require 'touchend' (a completed tap) to securely unlock Fullscreen and Audio
                 if (e.type === 'touchend') {
                     tryEnterFullscreen();
                 }
 
-                // 2. Handle Game Over Restart on touchend to prevent accidental instant-restarts
                 if (gameState === 'GAMEOVER' && !isInterpolatingGameOver && e.type === 'touchend') {
                     resetGame();
                     return;
                 }
 
-                // 3. Handle the "Tap to Play" screen
                 if (gameState === 'TAP_TO_START') {
                     if (e.type === 'touchend') {
                         gameState = 'PLAYING';
                     }
-                    return; // Block all other touch logic (like touchstart/move) until playing
+                    return; 
                 }
 
-                // --- Standard Gameplay Touch Logic Below ---
                 mobileKeys.left = false;
                 mobileKeys.right = false;
                 mobileKeys.shoot = false;
@@ -489,27 +551,22 @@
         });
 
         function pauseAllAudio() {
-            Object.values(assets.audio).forEach(audio => audio.pause());
+            if (assets.audio.bgMusic && typeof assets.audio.bgMusic.pause === 'function') {
+                assets.audio.bgMusic.pause();
+            }
+            if (walkSource) {
+                walkSource.stop();
+                walkSource = null;
+            }
+            audioCtx.suspend();
         }
 
         function initializeGameObjects() {
-            assets.audio.bgMusic.loop = true; assets.audio.bgMusic.volume = 0.1;
-            assets.audio.walk.loop = true; assets.audio.walk.volume = 0.5;
-            assets.audio.pickup.playbackRate = 0.8;
-            assets.audio.jump.playbackRate = 2.0; assets.audio.jump.volume = 0.3;
-            assets.audio.roll.volume = 0.6;
-            assets.audio.shot.volume = 0.4; assets.audio.shot.playbackRate = 2.0;
-            if(assets.audio.laserShot) { assets.audio.laserShot.volume = 0.2; assets.audio.laserShot.playbackRate = 1; }
-            if(assets.audio.meleeHit) { assets.audio.meleeHit.volume = 0.2; assets.audio.meleeHit.playbackRate = 3; }
-            assets.audio.playerHurt.playbackRate = 3.0; assets.audio.playerHurt.volume = 0.4;
-            assets.audio.womanHurt.playbackRate = 3.0; assets.audio.womanHurt.volume = 0.4;
-            assets.audio.womanDeath.playbackRate = 2.0; assets.audio.womanDeath.volume = 0.7;
-            assets.audio.priestDeath.playbackRate = 2.0; assets.audio.priestDeath.volume = 0.7;
-            assets.audio.monkDeath.playbackRate = 1.0; assets.audio.monkDeath.volume = 0.7;
-            assets.audio.bearDeath.playbackRate = 2.0; assets.audio.bearDeath.volume = 1.0;
-            if(assets.audio.kfcDeath) { assets.audio.kfcDeath.volume = 0.7; }
-            if(assets.audio.armoredWomanHurt) { assets.audio.armoredWomanHurt.volume = 0.7; assets.audio.armoredWomanHurt.playbackRate = 2.0; }
-            if(assets.audio.armoredWomanDeath) { assets.audio.armoredWomanDeath.volume = 0.7; }
+            // Keep background music streaming via Audio Element
+            if (assets.audio.bgMusic) {
+                assets.audio.bgMusic.loop = true; 
+                assets.audio.bgMusic.volume = 0.1;
+            }
 
             // Absolute Physical/Logical Setup
             player.speed = GAME_CFG.PLAYER_SPEED * GAME_CFG.WORLD_SCALE;
@@ -689,11 +746,11 @@
                     case (player.hp === 3):
                         hpDropChance = 0.30;
                         break;
-                    case (player.hp === 7):
-                        hpDropChance = 0;
+                    case (player.hp === 4):
+                        hpDropChance = 0.20;
                         break;
                     default:
-                        hpDropChance = 0.05;
+                        hpDropChance = 0;
                 }
                 
                 hpDropChance = Math.max(0, hpDropChance - healthDropPenalty);
@@ -704,10 +761,7 @@
                 }
             }
 
-            if (musicStarted) {
-                const sfx = assets.audio[w.type + 'Death'];
-                if(sfx) { sfx.currentTime = 0; sfx.play().catch(()=>{}); }
-            }
+            playSound(w.type + 'Death');
         }
 
         function resetGame() {
@@ -745,10 +799,17 @@
             for (let k in keys) keys[k] = false;
 
             musicStarted = false;
-            if (assets.audio.bgMusic) {
+            if (assets.audio.bgMusic && typeof assets.audio.bgMusic.pause === 'function') {
                 assets.audio.bgMusic.pause();
                 assets.audio.bgMusic.currentTime = 0;
             } 
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            if (walkSource) {
+                walkSource.stop();
+                walkSource = null;
+            }
         }
 
         function update() {
@@ -861,7 +922,7 @@
                 player.hitEnemiesThisRoll = []; player.rollRotation = 0; 
                 player.isMeleeing = false; 
 
-                if (musicStarted) { assets.audio.roll.currentTime = 0; assets.audio.roll.play().catch(()=>{}); }
+                playSound('roll');
             }
             else if (intentMelee && player.isGrounded && !player.isRolling) {
                 player.isMeleeing = true;
@@ -926,10 +987,7 @@
                         if (w.hp <= 0) handleEnemyDeath(w);
                         else {
                             if (!w.isTicking) { w.currentState = 'hurt'; w.hurtTimer = 150; w.isBlinking = true; w.blinkTimer = 80; }
-                            if (musicStarted) { 
-                                if (w.type === 'woman') { assets.audio.womanHurt.currentTime = 0; assets.audio.womanHurt.play().catch(()=>{}); }
-                                else if (w.type === 'armoredWoman' && w.armor > 0 && assets.audio.armoredWomanHurt) { assets.audio.armoredWomanHurt.currentTime = 0; assets.audio.armoredWomanHurt.play().catch(()=>{}); }
-                            }
+                            if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
                         }
                         hitCount++;
                         if (hitCount === 3) {
@@ -938,11 +996,7 @@
                     }
 
                     activeLasers.push({ startX, startY, endX, dir, life: 100 });
-
-                    if (musicStarted && assets.audio.laserShot) {
-                        assets.audio.laserShot.currentTime = 0; 
-                        assets.audio.laserShot.play().catch(()=>{});
-                    }
+                    playSound('laserShot');
                 } else {
                     bullets.push({
                         x: player.facingLeft ? player.x - bulletWidth + 25 * GAME_CFG.WORLD_SCALE: pRightEdge - 25 * GAME_CFG.WORLD_SCALE,
@@ -952,11 +1006,7 @@
                         damage: player.currentWeapon === 'uzi' ? 7 : 10 
                     });
 
-                    if (musicStarted) {
-                        assets.audio.shot.playbackRate = player.currentWeapon === 'uzi' ? 4.0 : 2.0;
-                        assets.audio.shot.currentTime = 0; 
-                        assets.audio.shot.play().catch(()=>{});
-                    }
+                    playSound('shot', player.currentWeapon === 'uzi' ? 4.0 : 2.0);
                 }
 
                 // Check if the weapon just emptied and swap to the next available one
@@ -992,7 +1042,7 @@
                         player.rollDistanceLeft += 300 * GAME_CFG.WORLD_SCALE;
                         player.rollDirection = player.facingLeft ? -1 : 1;
                         player.hitEnemiesThisRoll = []; 
-                        if (musicStarted) { assets.audio.roll.currentTime = 0; assets.audio.roll.play().catch(()=>{}); }
+                        playSound('roll');
                     } else {
                         player.isRolling = false; player.vx = 0;
                     }
@@ -1005,7 +1055,7 @@
                     if (intentJump) {
                         player.vy = player.isSlowed ? player.jumpPower * 0.7 : player.jumpPower; 
                         player.isGrounded = false;
-                        if (musicStarted) { assets.audio.jump.currentTime = 0; assets.audio.jump.play().catch(()=>{}); }
+                        playSound('jump');
                     }
                 }
             } else if (player.isGrounded) {
@@ -1020,16 +1070,19 @@
 
             const isActuallyWalking = (intentLeft || intentRight) && player.isGrounded && !player.isShooting && !player.isRolling && !player.isMeleeing;
             if (isActuallyWalking && musicStarted) {
-                if (assets.audio.walk.paused) assets.audio.walk.play().catch(()=>{});
+                if (!walkSource) walkSource = playSound('walk');
             } else {
-                if (!assets.audio.walk.paused) assets.audio.walk.pause();
+                if (walkSource) {
+                    walkSource.stop();
+                    walkSource = null;
+                }
             }
 
             if (!pistol.pickedUp && pistol.width > 0) {
                 pistol.floatY = Math.sin(frameTimeNow * pistol.floatSpeed) * pistol.floatAmplitude;
                 if (player.x < pistol.x + pistol.width && pRightEdge > pistol.x && player.y < pistol.y + pistol.height && player.y + player.height > pistol.y) {
                     pistol.pickedUp = true; pistol.ammo = pistol.maxAmmo; 
-                    assets.audio.pickup.play().catch(()=>{});
+                    playSound('pickup');
                     if (!musicStarted && assets.audio.bgMusic) {
                         assets.audio.bgMusic.play().catch(console.warn);
                         musicStarted = true;
@@ -1046,7 +1099,7 @@
                 const uHitX = uzi.x + 25 * GAME_CFG.WORLD_SCALE, uHitW = uzi.width - 50 * GAME_CFG.WORLD_SCALE;
                 if (player.x < uHitX + uHitW && pRightEdge > uHitX && player.y < uzi.y + uzi.height && player.y + player.height > uzi.y) {
                     uzi.pickedUp = true; uzi.ammo = uzi.maxAmmo; player.currentWeapon = 'uzi'; 
-                    assets.audio.pickup.play().catch(()=>{});
+                    playSound('pickup');
                 }
             }
 
@@ -1059,7 +1112,7 @@
                 const lHitX = laserWep.x + 25 * GAME_CFG.WORLD_SCALE, lHitW = laserWep.width - 50 * GAME_CFG.WORLD_SCALE;
                 if (player.x < lHitX + lHitW && pRightEdge > lHitX && player.y < laserWep.y + laserWep.height && player.y + player.height > laserWep.y) {
                     laserWep.pickedUp = true; laserWep.ammo = laserWep.maxAmmo; player.currentWeapon = 'laser'; 
-                    assets.audio.pickup.play().catch(()=>{});
+                    playSound('pickup');
                 }
             }
 
@@ -1145,10 +1198,7 @@
                              if (hitX < wHitX + wHitW && hitX + hitboxWidth > wHitX && hitY < wHitY + wHitH && hitY + hitH > wHitY) {
                                  player.hitEnemiesThisMeleeFrame.push(w);
                                  
-                                 if (musicStarted && assets.audio.meleeHit) {
-                                     assets.audio.meleeHit.currentTime = 0;
-                                     assets.audio.meleeHit.play().catch(()=>{});
-                                 }
+                                 playSound('meleeHit');
 
                                  applyEnemyDamage(w, 10, true);
                                  w.vx = player.facingLeft ? -1.5 * GAME_CFG.WORLD_SCALE : 1.5 * GAME_CFG.WORLD_SCALE;
@@ -1159,15 +1209,7 @@
                                      if (!w.isTicking) {
                                          w.currentState = 'hurt'; w.hurtTimer = 200; w.isBlinking = true; w.blinkTimer = 80;
                                      }
-                                     if (musicStarted) { 
-                                         if (w.type === 'woman') { assets.audio.womanHurt.currentTime = 0; assets.audio.womanHurt.play().catch(()=>{}); }
-                                         else if (w.type === 'armoredWoman') { 
-                                             if(w.armor > 0 && assets.audio.armoredWomanHurt) { 
-                                                 assets.audio.armoredWomanHurt.currentTime = 0; 
-                                                 assets.audio.armoredWomanHurt.play().catch(()=>{}); 
-                                             }
-                                         }
-                                     }
+                                     if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
                                  }
                              }
                         }
@@ -1209,7 +1251,7 @@
                     if (uzi.pickedUp) uzi.ammo = Math.min(uzi.maxAmmo, uzi.ammo + 15);
                     if (laserWep.pickedUp) laserWep.ammo = Math.min(laserWep.maxAmmo, laserWep.ammo + 15);
                     ammoPickups.splice(i, 1);
-                    if (musicStarted) { assets.audio.pickup.currentTime = 0; assets.audio.pickup.play().catch(()=>{}); }
+                    playSound('pickup');
                 }
             }
 
@@ -1224,7 +1266,7 @@
                 const hHitY = h.y + h.floatY;
                 if (player.x < h.x + hpW && pRightEdge > h.x && player.y < hHitY + hpH && player.y + player.height > hHitY) {
                     player.hp += 1; healthPickups.splice(i, 1);
-                    if (musicStarted) { assets.audio.pickup.currentTime = 0; assets.audio.pickup.play().catch(()=>{}); }
+                    playSound('pickup');
                 }
             }
 
@@ -1313,7 +1355,7 @@
                                 if (!player.isBlinking) {
                                     player.hp = Math.max(0, player.hp - 1);
                                     player.isBlinking = true; player.blinkTimer = 80;
-                                    if (musicStarted) { assets.audio.playerHurt.currentTime = 0; assets.audio.playerHurt.play().catch(()=>{}); }
+                                    playSound('playerHurt');
                                 }
                             }
                         }
@@ -1401,15 +1443,7 @@
                                     if (!w.isTicking) {
                                         w.currentState = 'hurt'; w.hurtTimer = 200; w.isBlinking = true; w.blinkTimer = 80;
                                     }
-                                    if (musicStarted) { 
-                                        if (w.type === 'woman') { assets.audio.womanHurt.currentTime = 0; assets.audio.womanHurt.play().catch(()=>{}); }
-                                        else if (w.type === 'armoredWoman') { 
-                                            if(w.armor > 0 && assets.audio.armoredWomanHurt) { 
-                                                assets.audio.armoredWomanHurt.currentTime = 0; 
-                                                assets.audio.armoredWomanHurt.play().catch(()=>{}); 
-                                            }
-                                        }
-                                    }
+                                    if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
                                 }
                             }
                         }
@@ -1432,7 +1466,7 @@
                     crosses.splice(i, 1); 
                     if (!player.isRolling && !player.isBlinking) { 
                         player.hp = Math.max(0, player.hp - 1); player.isBlinking = true; player.blinkTimer = 80; 
-                        if (musicStarted) { assets.audio.playerHurt.currentTime = 0; assets.audio.playerHurt.play().catch(()=>{}); }
+                        playSound('playerHurt');
                     }
                 }
             }
@@ -1452,7 +1486,7 @@
                     throwingStars.splice(i, 1); 
                     if (!player.isRolling && !player.isBlinking) { 
                         player.hp = Math.max(0, player.hp - 1); player.isBlinking = true; player.blinkTimer = 80; 
-                        if (musicStarted) { assets.audio.playerHurt.currentTime = 0; assets.audio.playerHurt.play().catch(()=>{}); }
+                        playSound('playerHurt');
                     }
                     continue;
                 }
@@ -1474,7 +1508,7 @@
                     rainbowHearts.splice(i, 1);
                     if (!player.isRolling && !player.isBlinking) {
                         player.hp = Math.max(0, player.hp - 1); player.isBlinking = true; player.blinkTimer = 80; 
-                        if (musicStarted) { assets.audio.playerHurt.currentTime = 0; assets.audio.playerHurt.play().catch(()=>{}); }
+                        playSound('playerHurt');
                     }
                 }
             }
@@ -1506,15 +1540,7 @@
                             if (!w.isTicking) {
                                 w.currentState = 'hurt'; w.hurtTimer = 200; w.isBlinking = true; w.blinkTimer = 80;       
                             }
-                            if (musicStarted) { 
-                                if (w.type === 'woman') { assets.audio.womanHurt.currentTime = 0; assets.audio.womanHurt.play().catch(()=>{}); }
-                                else if (w.type === 'armoredWoman') { 
-                                    if(w.armor > 0 && assets.audio.armoredWomanHurt) { 
-                                        assets.audio.armoredWomanHurt.currentTime = 0; 
-                                        assets.audio.armoredWomanHurt.play().catch(()=>{}); 
-                                    }
-                                }
-                            }
+                            if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
                         }
                         bullets.splice(i, 1); hitRegistered = true; break; 
                     }
