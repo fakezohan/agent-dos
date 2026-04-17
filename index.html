@@ -382,7 +382,7 @@
             
             currentState: 'idle', currentFrame: 0, frameTimer: 0, defaultFrameInterval: 30, facingLeft: false,
             isShooting: false, shootTimer: 0,
-            isSlowed: false
+            slowStack: 0
         };
 
         const pistol = { x: 0, y: 0, width: 0, height: 0, pickedUp: false, floatY: 0, floatSpeed: 0.005, floatAmplitude: 0, sizeRatio: 0.60, ammo: 0, maxAmmo: 30 };
@@ -599,8 +599,8 @@
             baseSizes.kfc.w = (assets.images.kfcRun.width / 3) * (GAME_CFG.ENEMY_SCALE * 2.27) * GAME_CFG.WORLD_SCALE;
             baseSizes.kfc.h = (assets.images.kfcRun.height / 14) * (GAME_CFG.ENEMY_SCALE * 2.27) * GAME_CFG.WORLD_SCALE;
             
-            baseSizes.armoredWoman.w = assets.images.armoredWoman.width * (GAME_CFG.ENEMY_SCALE * 2.05) * GAME_CFG.WORLD_SCALE;
-            baseSizes.armoredWoman.h = (assets.images.armoredWoman.height / 5) * (GAME_CFG.ENEMY_SCALE * 2.05) * GAME_CFG.WORLD_SCALE;
+            baseSizes.armoredWoman.w = assets.images.armoredWoman.width * (GAME_CFG.ENEMY_SCALE * 2.46) * GAME_CFG.WORLD_SCALE;
+            baseSizes.armoredWoman.h = (assets.images.armoredWoman.height / 5) * (GAME_CFG.ENEMY_SCALE * 2.46) * GAME_CFG.WORLD_SCALE;
 
             world.width = assets.images.background.width * GAME_CFG.WORLD_SCALE;
             world.height = assets.images.background.height * GAME_CFG.WORLD_SCALE;
@@ -676,7 +676,7 @@
             else if(type === 'monk') { frameDurs = [1100, 300]; tFrames = 2; }
             else if(type === 'bear') { r = 7; tFrames = 21; }
             else if(type === 'kfc') { r = 14; tFrames = 42; frameDurs = new Array(42).fill(15); }
-            else if(type === 'armoredWoman') { frameDurs = [1000, 300, 100, 100]; r = 5; c = 1; tFrames = 4; }
+            else if(type === 'armoredWoman') { frameDurs = [1000, 300, 800, 1500]; r = 5; c = 1; tFrames = 4; }
 
             enemies.push({
                 type, x: spawnX, y: yPos, vx: 0, vy: 0, width: scaledW, height: scaledH, hp: finalHp, maxHp: finalHp, level: currentLevel, isDead: false,
@@ -775,7 +775,7 @@
             player.isRolling = false; player.rollDistanceLeft = 0; player.hitEnemiesThisRoll = [];
             player.rollRotation = 0; 
             player.isMeleeing = false; player.hitEnemiesThisMeleeFrame = []; player.meleeMoveTimer = 0;
-            player.isSlowed = false;
+            player.slowStack = 0;
             
             pistol.pickedUp = false; pistol.ammo = 0; pistol.x = 600 * GAME_CFG.WORLD_SCALE; pistol.y = 855 * GAME_CFG.WORLD_SCALE;
             uzi.pickedUp = false; uzi.dropped = false; uzi.ammo = 0; uzi.vx = 0; uzi.vy = 0;
@@ -874,16 +874,16 @@
                 }
             }
 
-            player.isSlowed = false;
+            player.slowStack = 0;
             for (let j = 0; j < enemies.length; j++) {
                 let w = enemies[j];
-                if (w.type === 'armoredWoman' && !w.isDead && (w.currentFrame === 2 || w.currentFrame === 3) && w.currentState !== 'hurt') {
-                    player.isSlowed = true;
-                    break;
+                if (w.type === 'armoredWoman' && !w.isDead && (w.currentFrame === 3) && w.currentState !== 'hurt') {
+                    player.slowStack++;
                 }
             }
 
-            let effSpeed = player.isSlowed ? player.speed * 0.7 : player.speed;
+            let slowMult = Math.pow(0.85, player.slowStack);
+            let effSpeed = player.speed * slowMult;
 
             const pxCenter = player.x + player.width / 2;
             const pyCenter = player.y + player.height / 2;
@@ -931,7 +931,7 @@
             else if (intentShoot && !player.isShooting && !player.isRolling && player.isGrounded && activeWeapon.pickedUp && (player.currentWeapon === 'laser' ? player.mana >= 7 : activeWeapon.ammo > 0)) {
                 player.isShooting = true;
                 player.shootTimer = player.currentWeapon === 'uzi' ? 100 : player.currentWeapon === 'laser' ? 133 : 200; 
-                if (player.isSlowed) player.shootTimer = Math.floor(player.shootTimer / 0.7);
+                if (player.slowStack > 0) player.shootTimer = Math.floor(player.shootTimer / slowMult);
                 
                 if (player.currentWeapon === 'laser') {
                     player.mana -= 7;
@@ -1030,7 +1030,7 @@
             }
 
             if (player.isRolling) {
-                let effRollSpeed = player.isSlowed ? player.rollSpeed * 0.7 : player.rollSpeed;
+                let effRollSpeed = player.rollSpeed * slowMult;
                 player.vx = player.rollDirection * effRollSpeed;
                 player.rollDistanceLeft -= Math.abs(player.vx);
                 player.rollRotation += (player.rollDirection === 1 ? 1 : -1) * (Math.PI * 2 * (16 / 200));
@@ -1053,7 +1053,7 @@
                     if (intentLeft) { player.vx = -effSpeed; isMoving = true; player.facingLeft = true; } 
                     else if (intentRight) { player.vx = effSpeed; isMoving = true; player.facingLeft = false; }
                     if (intentJump) {
-                        player.vy = player.isSlowed ? player.jumpPower * 0.7 : player.jumpPower; 
+                        player.vy = player.jumpPower * slowMult; 
                         player.isGrounded = false;
                         playSound('jump');
                     }
@@ -1146,7 +1146,7 @@
                 totalFrames = player.jumpTotalFrames;
             } else if (player.currentState === 'melee') {
                 totalFrames = player.meleeTotalFrames;
-                currentFrameInterval = player.isSlowed ? Math.floor(16 / 0.7) : 16;
+                currentFrameInterval = player.slowStack > 0 ? Math.floor(16 / slowMult) : 16;
             } else if (player.currentState !== 'rolling') {
                 totalFrames = player.currentState === 'walk' ? player.walkTotalFrames : player.idleTotalFrames;
             }
@@ -1165,7 +1165,7 @@
 
             if (player.currentState === 'melee') {
                 player.meleeMoveTimer += GAME_CFG.TIME_STEP;
-                const meleeMoveInterval = player.isSlowed ? Math.floor(6 / 0.7) : 6;
+                const meleeMoveInterval = player.slowStack > 0 ? Math.floor(6 / slowMult) : 6;
                 if (player.meleeMoveTimer >= meleeMoveInterval) {
                     let moveAmount = player.facingLeft ? -2 * GAME_CFG.WORLD_SCALE : 2 * GAME_CFG.WORLD_SCALE;
                     player.x += moveAmount;
@@ -1286,12 +1286,12 @@
 
                     let baseVOff;
                     switch (w.type) {
-                      case 'woman': baseVOff = 17 * GAME_CFG.WORLD_SCALE; break;
-                      case 'priest': baseVOff = 34 * GAME_CFG.WORLD_SCALE; break;
-                      case 'monk': baseVOff = -82 * GAME_CFG.WORLD_SCALE; break;
-                      case 'bear': baseVOff = 11 * GAME_CFG.WORLD_SCALE; break;
+                      case 'woman': baseVOff = 14 * GAME_CFG.WORLD_SCALE; break;
+                      case 'priest': baseVOff = 29 * GAME_CFG.WORLD_SCALE; break;
+                      case 'monk': baseVOff = -63 * GAME_CFG.WORLD_SCALE; break;
+                      case 'bear': baseVOff = 9 * GAME_CFG.WORLD_SCALE; break;
                       case 'kfc': baseVOff = 1; break;
-                      case 'armoredWoman': baseVOff = 39 * GAME_CFG.WORLD_SCALE; break;
+                      case 'armoredWoman': baseVOff = 32 * GAME_CFG.WORLD_SCALE; break;
                       default: baseVOff = 7 * GAME_CFG.WORLD_SCALE;
                     }
                     const visualOffset = baseVOff * (w.height / baseSizes[w.type].h);
@@ -1371,23 +1371,7 @@
                     } else {
                         w.frameTimer += GAME_CFG.TIME_STEP;
                         
-                        if (w.type === 'armoredWoman') {
-                            const currentDuration = w.frameDurations[w.currentFrame];
-                            if (w.frameTimer >= currentDuration) {
-                                w.frameTimer -= currentDuration;
-                                if (w.currentFrame === 1) { 
-                                    w.currentFrame = 2; w.attackLoopCount = 0; 
-                                } else if (w.currentFrame === 2) { 
-                                    w.currentFrame = 3; 
-                                } else if (w.currentFrame === 3) {
-                                    w.attackLoopCount++;
-                                    if (w.attackLoopCount < 7) { w.currentFrame = 2; } 
-                                    else { w.currentFrame = 0; }
-                                } else { 
-                                    w.currentFrame = 1; 
-                                }
-                            }
-                        } else if (w.type === 'bear') {
+                        if (w.type === 'bear') {
                             if (w.currentState === 'run') {
                                 if (w.frameTimer >= 50) { w.currentFrame = (w.currentFrame + 1) % 21; w.frameTimer -= 50; }
                             } else if (w.currentState === 'attack') {
@@ -1934,8 +1918,8 @@
                     const rSize = player.height * 0.56; 
                     ctx.save(); 
                     if (!isMobile) {
-                        ctx.shadowColor = player.isSlowed ? 'cyan' : 'orange'; 
-                        ctx.shadowBlur = player.isSlowed ? 30 : 15;
+                        ctx.shadowColor = player.slowStack > 0 ? 'cyan' : 'orange'; 
+                        ctx.shadowBlur = player.slowStack > 0 ? 30 : 15;
                     }
                     if (player.isBlinking) {
                         if (!isMobile) {
@@ -1975,7 +1959,7 @@
                     
                     ctx.save(); 
                     if (!isMobile) {
-                        if (player.isSlowed) {
+                        if (player.slowStack > 0) {
                             ctx.shadowColor = 'cyan';
                             ctx.shadowBlur = 30;
                         } else if (player.currentState === 'melee') { 
@@ -2000,18 +1984,20 @@
                     ctx.shadowColor = 'transparent';
                     ctx.shadowBlur = 0;
 
-                    if (player.isSlowed && assets.images.snowParticle) {
+                    if (player.slowStack > 0 && assets.images.snowParticle) {
                         const spW = assets.images.snowParticle.width * 0.25 * GAME_CFG.WORLD_SCALE;
                         const spH = assets.images.snowParticle.height * 0.25 * GAME_CFG.WORLD_SCALE;
                         const spX = screenX + (rW / 2) - (spW / 2);
-                        const spY = screenY - spH - 15 * GAME_CFG.WORLD_SCALE;
 
                         ctx.save();
                         if (!isMobile) {
                             ctx.shadowColor = 'cyan';
                             ctx.shadowBlur = 15;
                         }
-                        ctx.drawImage(assets.images.snowParticle, spX, spY, spW, spH);
+                        for (let stack = 0; stack < player.slowStack; stack++) {
+                            const spY = screenY - (spH * (stack + 1)) - (5 * GAME_CFG.WORLD_SCALE * stack) - 15 * GAME_CFG.WORLD_SCALE;
+                            ctx.drawImage(assets.images.snowParticle, spX, spY, spW, spH);
+                        }
                         ctx.restore();
                     }
                 }
