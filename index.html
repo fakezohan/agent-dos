@@ -174,7 +174,9 @@
             bearDeath: { volume: 1.0, rate: 2.0 },
             kfcDeath: { volume: 0.7, rate: 1.0 },
             armoredWomanHurt: { volume: 0.7, rate: 2.0 },
-            armoredWomanDeath: { volume: 0.7, rate: 1.0 }
+            armoredWomanDeath: { volume: 0.7, rate: 1.0 },
+            downBoyDeath: { volume: 0.7, rate: 1.0 },
+            toyCarDeath: { volume: 0.7, rate: 1.0 }
         };
 
         // --- Shared Constants & Magic Numbers ---
@@ -255,7 +257,9 @@
             kfcRun: 'resources/enemies/kfc/kfc_moving_sprite_sheet.png',
             kfcHurt: 'resources/enemies/kfc/kfc_hurt.png',
             armoredWoman: 'resources/enemies/armored_woman/armored_woman_sprite_sheet.png',
-            snowParticle: 'resources/enemies/armored_woman/armored_woman_projectile.png'
+            snowParticle: 'resources/enemies/armored_woman/armored_woman_projectile.png',
+            downBoy: 'resources/enemies/down_boy/down_boy_sprite_sheet.png',
+            toyCar: 'resources/enemies/down_boy/toy_car_sprite_sheet.png'
         };
         const audioSources = {
             bgMusic: 'resources/sounds/background_music.mp3',
@@ -274,7 +278,9 @@
             bearDeath: 'resources/sounds/bear_death_sound_effect.mp3',
             kfcDeath: 'resources/sounds/kfc_death_sound_effect.mp3',
             armoredWomanHurt: 'resources/sounds/armored_woman_hurt_sound_effect.mp3',
-            armoredWomanDeath: 'resources/sounds/armor_woman_death_sound_effect.mp3'
+            armoredWomanDeath: 'resources/sounds/armor_woman_death_sound_effect.mp3',
+            downBoyDeath: 'resources/sounds/down_boy_death_sound_effect.mp3',
+            toyCarDeath: 'resources/sounds/toy_car_death_sound_effect.mp3'
         };
 
         let loadProgress = 0;
@@ -391,7 +397,7 @@
 
         let bullets = [], activeLasers = [], ammoPickups = [], healthPickups = [], throwingStars = [], crosses = [], enemies = [], rainbowHearts = [];
         let bulletWidth = 0, bulletHeight = 0, starWidth = 0, starHeight = 0, crossWidth = 0, crossHeight = 0;
-        let baseSizes = { woman: {w:0,h:0}, priest: {w:0,h:0}, monk: {w:0,h:0}, bear: {w:0,h:0}, kfc: {w:0,h:0}, armoredWoman: {w:0,h:0} };
+        let baseSizes = { woman: {w:0,h:0}, priest: {w:0,h:0}, monk: {w:0,h:0}, bear: {w:0,h:0}, kfc: {w:0,h:0}, armoredWoman: {w:0,h:0}, downBoy: {w:0,h:0}, toyCar: {w:0,h:0} };
         
         let nextSpawnTargetMs;
         let currentSpawnIntervalMs;
@@ -602,6 +608,11 @@
             baseSizes.armoredWoman.w = assets.images.armoredWoman.width * (GAME_CFG.ENEMY_SCALE * 2.46) * GAME_CFG.WORLD_SCALE;
             baseSizes.armoredWoman.h = (assets.images.armoredWoman.height / 5) * (GAME_CFG.ENEMY_SCALE * 2.46) * GAME_CFG.WORLD_SCALE;
 
+            baseSizes.downBoy.w = assets.images.downBoy.width * GAME_CFG.ENEMY_SCALE * 2.47 * GAME_CFG.WORLD_SCALE;
+            baseSizes.downBoy.h = (assets.images.downBoy.height / 5) * GAME_CFG.ENEMY_SCALE * 2.47 * GAME_CFG.WORLD_SCALE;
+            baseSizes.toyCar.w = (assets.images.toyCar.width / 2) * GAME_CFG.ENEMY_SCALE * 3 * GAME_CFG.WORLD_SCALE;
+            baseSizes.toyCar.h = (assets.images.toyCar.height / 3) * GAME_CFG.ENEMY_SCALE * 3 * GAME_CFG.WORLD_SCALE;
+
             world.width = assets.images.background.width * GAME_CFG.WORLD_SCALE;
             world.height = assets.images.background.height * GAME_CFG.WORLD_SCALE;
             floorY = world.height - (GAME_CFG.FLOOR_OFFSET * GAME_CFG.WORLD_SCALE);
@@ -632,7 +643,7 @@
             }
         }
 
-        function spawnEnemy(type, startX) {
+        function spawnEnemy(type, startX, owner) {
             const base = baseSizes[type];
             let scaledW = (base.w || 100) * enemySizeMultiplier;
             let scaledH = base.h * enemySizeMultiplier;
@@ -664,10 +675,12 @@
             else if (type === 'bear') baseHp = 55;
             else if (type === 'kfc') baseHp = 65;
             else if (type === 'armoredWoman') baseHp = 25;
+            else if (type === 'downBoy') baseHp = 65;
+            else if (type === 'toyCar') baseHp = 1;
 
             const finalHp = Math.floor(baseHp * enemyBonusHP);
             const currentLevel = 1 + difficultyIntervals;
-            const armor = type === 'armoredWoman' ? Math.floor(5 * enemyBonusArmor) : 0;
+            const armor = type === 'armoredWoman' ? Math.floor(5 * enemyBonusArmor) : (type === 'toyCar' ? 2 : 0);
             
             let frameDurs = [];
             let r = 1, tFrames = 3, c = 3;
@@ -677,17 +690,46 @@
             else if(type === 'bear') { r = 7; tFrames = 21; }
             else if(type === 'kfc') { r = 14; tFrames = 42; frameDurs = new Array(42).fill(15); }
             else if(type === 'armoredWoman') { frameDurs = [1000, 300, 800, 1500]; r = 5; c = 1; tFrames = 4; }
+            else if(type === 'downBoy') { frameDurs = [1000, 300, 1000, 1000, 300]; r = 5; c = 1; tFrames = 5; }
+            else if(type === 'toyCar') { frameDurs = [30, 30, 30, 30, 30, 30]; r = 3; c = 2; tFrames = 6; }
 
-            enemies.push({
-                type, x: spawnX, y: yPos, vx: 0, vy: 0, width: scaledW, height: scaledH, hp: finalHp, maxHp: finalHp, level: currentLevel, isDead: false,
+            let newEnemy = {
+                type, x: spawnX, y: yPos, vx: 0, vy: 0, width: scaledW, height: scaledH, hp: type === 'toyCar' ? 1 : finalHp, maxHp: finalHp, level: currentLevel, isDead: false,
                 armor: armor, maxArmor: armor, exploded: false,
                 currentState: 'idle', stateTimer: 3000, hurtTimer: 0, cols: c, rows: r, totalFrames: tFrames,
                 currentFrame: 0, frameTimer: 0, frameDurations: frameDurs, facingLeft: true, isBlinking: false, blinkTimer: 0,
                 attackLoopCount: 0, isTicking: false, tickingTimer: 0
-            });
+            };
+
+            if (type === 'downBoy') {
+                newEnemy.dbPhase = 0;
+                newEnemy.associatedCar = null;
+            } else if (type === 'toyCar') {
+                newEnemy.owner = owner;
+                newEnemy.distanceTraveled = 0;
+                if (owner) {
+                    newEnemy.facingLeft = owner.facingLeft;
+                    owner.associatedCar = newEnemy;
+                }
+            }
+
+            enemies.push(newEnemy);
         }
 
         function applyEnemyDamage(w, incomingDmg, isMelee = false) {
+            if (w.type === 'toyCar') {
+                if (isMelee) return;
+                w.armor -= 1; 
+                if (w.armor <= 0) {
+                    w.hp = 0;
+                    w.armor = 0;
+                }
+                currentScore += incomingDmg;
+                w.isBlinking = true;
+                w.blinkTimer = 80;
+                return;
+            }
+
             if (w.armor !== undefined && w.armor > 0) {
                 if (isMelee) return; 
                 let effectiveDmg = Math.max(1, incomingDmg - 9); 
@@ -709,6 +751,12 @@
             w.vy = -10 * GAME_CFG.WORLD_SCALE; w.vx = w.facingLeft ? 2 * GAME_CFG.WORLD_SCALE : -2 * GAME_CFG.WORLD_SCALE; w.rotation = 0;
             w.targetRotation = (Math.random() > 0.5 ? 1 : -1) * (35 * Math.PI / 180);
             w.rotationSpeed = w.targetRotation / 45; 
+
+            if (w.type === 'downBoy' && w.associatedCar && !w.associatedCar.isDead) {
+                w.associatedCar.hp = 0;
+                w.associatedCar.armor = 0;
+                handleEnemyDeath(w.associatedCar);
+            }
 
             if (enemiesKilled >= 30 && !laserWep.dropped) {
                 laserWep.dropped = true; updateWeaponSizes();
@@ -955,6 +1003,7 @@
                         let hOffX = 30 * GAME_CFG.WORLD_SCALE, hOffY = 10 * GAME_CFG.WORLD_SCALE, hRedW = 60 * GAME_CFG.WORLD_SCALE, hRedH = 30 * GAME_CFG.WORLD_SCALE;
                         if (w.type === 'monk') { hOffX = hOffX * 1.3 - 30 * GAME_CFG.WORLD_SCALE; hOffY = hOffY * 1.3 + 50 * GAME_CFG.WORLD_SCALE; hRedW = hRedW * 1.3 - 60 * GAME_CFG.WORLD_SCALE; hRedH = hRedH * 1.3 + 100 * GAME_CFG.WORLD_SCALE; }
                         else if (w.type === 'bear') { hOffX = 20 * GAME_CFG.WORLD_SCALE; hOffY = 20 * GAME_CFG.WORLD_SCALE; hRedW = 40 * GAME_CFG.WORLD_SCALE; hRedH = 40 * GAME_CFG.WORLD_SCALE; }
+                        else if (w.type === 'toyCar') { hOffX = 5 * GAME_CFG.WORLD_SCALE; hOffY = 5 * GAME_CFG.WORLD_SCALE; hRedW = 10 * GAME_CFG.WORLD_SCALE; hRedH = 10 * GAME_CFG.WORLD_SCALE; }
                         const scaleRatio = w.height / baseSizes[w.type].h;
                         hOffX *= scaleRatio; hOffY *= scaleRatio; hRedW *= scaleRatio; hRedH *= scaleRatio;
                         const wHitX = w.x + hOffX, wHitY = w.y + hOffY, wHitW = w.width - hRedW, wHitH = w.height - hRedH;
@@ -1082,11 +1131,11 @@
                 pistol.floatY = Math.sin(frameTimeNow * pistol.floatSpeed) * pistol.floatAmplitude;
                 if (player.x < pistol.x + pistol.width && pRightEdge > pistol.x && player.y < pistol.y + pistol.height && player.y + player.height > pistol.y) {
                     pistol.pickedUp = true; pistol.ammo = pistol.maxAmmo; 
-                    playSound('pickup');
                     if (!musicStarted && assets.audio.bgMusic) {
                         assets.audio.bgMusic.play().catch(console.warn);
                         musicStarted = true;
                     }
+                    playSound('pickup');
                 }
             }
 
@@ -1190,6 +1239,7 @@
                              let hOffX = 30 * GAME_CFG.WORLD_SCALE, hOffY = 10 * GAME_CFG.WORLD_SCALE, hRedW = 60 * GAME_CFG.WORLD_SCALE, hRedH = 30 * GAME_CFG.WORLD_SCALE;
                              if (w.type === 'monk') { hOffX = hOffX * 1.3 - 30 * GAME_CFG.WORLD_SCALE; hOffY = hOffY * 1.3 + 50 * GAME_CFG.WORLD_SCALE; hRedW = hRedW * 1.3 - 60 * GAME_CFG.WORLD_SCALE; hRedH = hRedH * 1.3 + 100 * GAME_CFG.WORLD_SCALE; }
                              else if (w.type === 'bear') { hOffX = 20 * GAME_CFG.WORLD_SCALE; hOffY = 20 * GAME_CFG.WORLD_SCALE; hRedW = 40 * GAME_CFG.WORLD_SCALE; hRedH = 40 * GAME_CFG.WORLD_SCALE; }
+                             else if (w.type === 'toyCar') { hOffX = 5 * GAME_CFG.WORLD_SCALE; hOffY = 5 * GAME_CFG.WORLD_SCALE; hRedW = 10 * GAME_CFG.WORLD_SCALE; hRedH = 10 * GAME_CFG.WORLD_SCALE; }
                              const scaleRatio = w.height / baseSizes[w.type].h;
                              hOffX *= scaleRatio; hOffY *= scaleRatio; hRedW *= scaleRatio; hRedH *= scaleRatio;
 
@@ -1226,6 +1276,7 @@
                     if (pistolActiveTimeMs >= 12000) unlockedPool.push('bear');
                     if (pistolActiveTimeMs >= 15000) unlockedPool.push('kfc');
                     if (pistolActiveTimeMs >= 18000) unlockedPool.push('armoredWoman');
+                    if (pistolActiveTimeMs >= 21000) unlockedPool.push('downBoy');
 
                     if (unlockedPool.length > 0) {
                         const randomEnemyType = unlockedPool[Math.floor(Math.random() * unlockedPool.length)];
@@ -1292,6 +1343,8 @@
                       case 'bear': baseVOff = 9 * GAME_CFG.WORLD_SCALE; break;
                       case 'kfc': baseVOff = 1; break;
                       case 'armoredWoman': baseVOff = 32 * GAME_CFG.WORLD_SCALE; break;
+                      case 'downBoy': baseVOff = 29 * GAME_CFG.WORLD_SCALE; break;
+                      case 'toyCar': baseVOff = 5; break;
                       default: baseVOff = 7 * GAME_CFG.WORLD_SCALE;
                     }
                     const visualOffset = baseVOff * (w.height / baseSizes[w.type].h);
@@ -1302,11 +1355,74 @@
                         if (w.type !== 'bear' || w.currentState === 'idle' || w.currentState === 'attack') w.vx = 0; 
                     }
 
-                    w.facingLeft = pxCenter < wCenter;
+                    if (w.type !== 'toyCar') {
+                        w.facingLeft = pxCenter < wCenter;
+                    }
 
                     if (w.type === 'armoredWoman' && w.currentState !== 'hurt') w.vx = 0;
                     if (w.type === 'kfc' && w.currentState !== 'hurt') w.vx = w.facingLeft ? -3.5 * GAME_CFG.WORLD_SCALE : 3.5 * GAME_CFG.WORLD_SCALE;
                     if (w.type === 'monk' && w.currentState !== 'hurt') w.vx = Math.abs(pxCenter - wCenter) > 300 * GAME_CFG.WORLD_SCALE ? (w.facingLeft ? -1.5 * GAME_CFG.WORLD_SCALE : 1.5 * GAME_CFG.WORLD_SCALE) : 0;
+
+                    if (w.type === 'downBoy' && w.currentState !== 'hurt' && !w.isDead) {
+                        w.frameTimer += GAME_CFG.TIME_STEP;
+                        let phaseDurations = [1000, 300, 1000, 1000, 300];
+                        let phaseFrames = [0, 1, 0, 2, 3];
+
+                        if (w.frameTimer >= phaseDurations[w.dbPhase]) {
+                            w.frameTimer -= phaseDurations[w.dbPhase];
+                            w.dbPhase++;
+                            if (w.dbPhase > 4) w.dbPhase = 3;
+                            w.currentFrame = phaseFrames[w.dbPhase];
+
+                            if (w.dbPhase === 1) { // Adjusted from 3 to 1 so they spawn on Frame 1
+                                if (!w.associatedCar || w.associatedCar.isDead) {
+                                    let spawnX = w.x + (w.facingLeft ? 1400 * GAME_CFG.WORLD_SCALE : -1400 * GAME_CFG.WORLD_SCALE);
+                                    spawnEnemy('toyCar', spawnX, w);
+                                } else {
+                                    // Make the existing Toy Car turn around and face the player
+                                    const carCenter = w.associatedCar.x + w.associatedCar.width / 2;
+                                    w.associatedCar.facingLeft = pxCenter < carCenter;
+                                }
+                            }
+                        }
+
+                        if (!w.associatedCar || w.associatedCar.isDead) {
+                            // If the car was destroyed, reset Down Boy to idle so he spawns a new one
+                            if (w.dbPhase >= 3) {
+                                w.dbPhase = 0;
+                                w.currentFrame = phaseFrames[w.dbPhase];
+                                w.frameTimer = 0;
+                            }
+                        } else {
+                            // If the car is alive, wait for it to finish its run before turning it around
+                            if (w.associatedCar.distanceTraveled >= 1400 * GAME_CFG.WORLD_SCALE) {
+                                w.dbPhase = 0;
+                                w.currentFrame = phaseFrames[w.dbPhase];
+                                w.frameTimer = 0;
+                                w.associatedCar.distanceTraveled = 0;
+                            }
+                        }
+                    }
+
+                    if (w.type === 'toyCar') {
+                        if (!w.isDead && w.currentState !== 'hurt') {
+                            w.frameTimer += GAME_CFG.TIME_STEP;
+                            if (w.frameTimer >= 30) {
+                                w.currentFrame = (w.currentFrame + 1) % 6;
+                                w.frameTimer -= 30;
+                            }
+
+                            if (w.owner && !w.owner.isDead && (w.owner.currentFrame === 2 || w.owner.currentFrame === 3)) {
+                                let speed = 8 * GAME_CFG.WORLD_SCALE; // Increased to 8
+                                w.vx = w.facingLeft ? -speed : speed;
+                                w.distanceTraveled += Math.abs(w.vx);
+                            } else {
+                                w.vx = 0;
+                            }
+                        } else if (w.isDead) {
+                            w.vx = 0;
+                        }
+                    }
 
                     if (w.type === 'bear' && w.currentState !== 'hurt') {
                         const distToPlayer = Math.abs(pxCenter - wCenter);
@@ -1322,6 +1438,24 @@
                             if (distToPlayer < 400 * GAME_CFG.WORLD_SCALE) { w.currentState = 'attack'; w.currentFrame = 0; w.frameTimer = 0; w.vx = 0; }
                         } else if (w.currentState === 'attack') {
                             w.vx = 0; w.facingLeft = pxCenter < wCenter;
+                        }
+                    }
+
+                    if (w.type === 'toyCar' && !w.isDead && !player.isRolling) {
+                        let hOffX = 5 * GAME_CFG.WORLD_SCALE, hOffY = 5 * GAME_CFG.WORLD_SCALE, hRedW = 10 * GAME_CFG.WORLD_SCALE, hRedH = 10 * GAME_CFG.WORLD_SCALE;
+                        const scaleRatio = w.height / baseSizes[w.type].h;
+                        hOffX *= scaleRatio; hOffY *= scaleRatio; hRedW *= scaleRatio; hRedH *= scaleRatio;
+                        const wHitX = w.x + hOffX, wHitY = w.y + hOffY, wHitW = w.width - hRedW, wHitH = w.height - hRedH;
+
+                        if (pHitXCenter < wHitX + wHitW && pHitXCenter + pHitWCenter > wHitX && pHitYCenter < wHitY + wHitH && pHitYCenter + pHitHCenter > wHitY) {
+                            if (!player.isBlinking) {
+                                player.hp = Math.max(0, player.hp - 1);
+                                player.isBlinking = true; player.blinkTimer = 80;
+                                playSound('playerHurt');
+                            }
+                            w.hp = 0;
+                            w.armor = 0;
+                            handleEnemyDeath(w);
                         }
                     }
 
@@ -1367,8 +1501,12 @@
                             w.currentState = 'idle'; 
                             w.currentFrame = 0; w.frameTimer = 0;
                             if (w.type === 'bear') w.stateTimer = 3000;
+                            if (w.type === 'downBoy') {
+                                w.dbPhase = 1;
+                                w.currentFrame = 1;
+                            }
                         }
-                    } else {
+                    } else if (w.type !== 'downBoy' && w.type !== 'toyCar') {
                         w.frameTimer += GAME_CFG.TIME_STEP;
                         
                         if (w.type === 'bear') {
@@ -1408,6 +1546,7 @@
                         let hOffX = 30 * GAME_CFG.WORLD_SCALE, hOffY = 10 * GAME_CFG.WORLD_SCALE, hRedW = 60 * GAME_CFG.WORLD_SCALE, hRedH = 30 * GAME_CFG.WORLD_SCALE;
                         if (w.type === 'monk') { hOffX = hOffX * 1.3 - 30 * GAME_CFG.WORLD_SCALE; hOffY = hOffY * 1.3 + 50 * GAME_CFG.WORLD_SCALE; hRedW = hRedW * 1.3 - 60 * GAME_CFG.WORLD_SCALE; hRedH = hRedH * 1.3 + 100 * GAME_CFG.WORLD_SCALE; }
                         else if (w.type === 'bear') { hOffX = 20 * GAME_CFG.WORLD_SCALE; hOffY = 20 * GAME_CFG.WORLD_SCALE; hRedW = 40 * GAME_CFG.WORLD_SCALE; hRedH = 40 * GAME_CFG.WORLD_SCALE; }
+                        else if (w.type === 'toyCar') { hOffX = 5 * GAME_CFG.WORLD_SCALE; hOffY = 5 * GAME_CFG.WORLD_SCALE; hRedW = 10 * GAME_CFG.WORLD_SCALE; hRedH = 10 * GAME_CFG.WORLD_SCALE; }
 
                         const scaleRatio = w.height / baseSizes[w.type].h;
                         hOffX *= scaleRatio; hOffY *= scaleRatio; hRedW *= scaleRatio; hRedH *= scaleRatio;
@@ -1508,6 +1647,7 @@
                     let hOffX = 30 * GAME_CFG.WORLD_SCALE, hOffY = 10 * GAME_CFG.WORLD_SCALE, hRedW = 60 * GAME_CFG.WORLD_SCALE, hRedH = 30 * GAME_CFG.WORLD_SCALE;
                     if (w.type === 'monk') { hOffX = hOffX * 1.3 - 30 * GAME_CFG.WORLD_SCALE; hOffY = hOffY * 1.3 + 50 * GAME_CFG.WORLD_SCALE; hRedW = hRedW * 1.3 - 60 * GAME_CFG.WORLD_SCALE; hRedH = hRedH * 1.3 + 100 * GAME_CFG.WORLD_SCALE; }
                     else if (w.type === 'bear') { hOffX = 20 * GAME_CFG.WORLD_SCALE; hOffY = 20 * GAME_CFG.WORLD_SCALE; hRedW = 40 * GAME_CFG.WORLD_SCALE; hRedH = 40 * GAME_CFG.WORLD_SCALE; }
+                    else if (w.type === 'toyCar') { hOffX = 5 * GAME_CFG.WORLD_SCALE; hOffY = 5 * GAME_CFG.WORLD_SCALE; hRedW = 10 * GAME_CFG.WORLD_SCALE; hRedH = 10 * GAME_CFG.WORLD_SCALE; }
 
                     const scaleRatio = w.height / baseSizes[w.type].h;
                     hOffX *= scaleRatio; hOffY *= scaleRatio; hRedW *= scaleRatio; hRedH *= scaleRatio;
@@ -1758,17 +1898,24 @@
 
                 for (let w of enemies) {
                     if (w.width <= 0) continue; 
-                    let activeImg = w.type === 'woman' ? assets.images.womanIdle : w.type === 'priest' ? assets.images.priestIdle : w.type === 'monk' ? assets.images.monkIdle : w.type === 'kfc' ? assets.images.kfcRun : w.type === 'armoredWoman' ? assets.images.armoredWoman : (w.currentState === 'run' ? assets.images.bearRun : w.currentState === 'attack' ? assets.images.bearAttack : assets.images.bearIdle);
+                    let activeImg = w.type === 'woman' ? assets.images.womanIdle : w.type === 'priest' ? assets.images.priestIdle : w.type === 'monk' ? assets.images.monkIdle : w.type === 'kfc' ? assets.images.kfcRun : w.type === 'armoredWoman' ? assets.images.armoredWoman : w.type === 'downBoy' ? assets.images.downBoy : w.type === 'toyCar' ? assets.images.toyCar : (w.currentState === 'run' ? assets.images.bearRun : w.currentState === 'attack' ? assets.images.bearAttack : assets.images.bearIdle);
 
                     ctx.save();
                     
                     let drawScale = 1.0;
                     
+                    if (!isMobile && !w.isDead) {
+                        if (w.type === 'toyCar' || (w.type === 'kfc' && w.isTicking && w.tickingTimer >= 1800)) {
+                            ctx.shadowColor = 'lime';
+                            ctx.shadowBlur = 15;
+                        }
+                    }
+
                     if (w.isTicking && !w.isDead) {
-                        let t = w.tickingTimer;
                         let isFlash = false;
                         let isWhite = false;
 
+                        let t = w.tickingTimer;
                         if (t < 1000) {
                             if (t % 250 < 100) isFlash = true;
                         } else if (t < 1800) {
@@ -1784,16 +1931,18 @@
                             drawScale = 1.0 + 0.2 * ((t - 1500) / 500);
                         }
 
-                        if (!isMobile) {
-                            if (isWhite) {
-                                ctx.filter = 'brightness(1000%) grayscale(100%) drop-shadow(0px 0px 5px rgba(255,255,255,0.4))';
-                            } else if (isFlash) {
-                                ctx.filter = 'brightness(100%) sepia(100%) hue-rotate(315deg) saturate(800%) drop-shadow(0px 0px 3px rgba(255,0,0,0.4))';
-                            }
-                        } else {
-                            if (isWhite || isFlash) {
-                                ctx.globalCompositeOperation = 'lighter';
-                                ctx.globalAlpha = isWhite ? 0.9 : 0.6;
+                        if (isFlash || isWhite) {
+                            if (!isMobile) {
+                                if (isWhite) {
+                                    ctx.filter = 'brightness(1000%) grayscale(100%) drop-shadow(0px 0px 5px rgba(255,255,255,0.4))';
+                                } else if (isFlash) {
+                                    ctx.filter = 'brightness(100%) sepia(100%) hue-rotate(315deg) saturate(800%) drop-shadow(0px 0px 3px rgba(255,0,0,0.4))';
+                                }
+                            } else {
+                                if (isWhite || isFlash) {
+                                    ctx.globalCompositeOperation = 'lighter';
+                                    ctx.globalAlpha = isWhite ? 0.9 : 0.6;
+                                }
                             }
                         }
                     } else if (w.isBlinking) {
@@ -1811,6 +1960,8 @@
                         else if (w.type === 'bear') { imgToDraw = assets.images.bearHurt; sWidth = assets.images.bearHurt.width; sHeight = assets.images.bearHurt.height; sx = 0; sy = 0; } 
                         else if (w.type === 'kfc') { imgToDraw = assets.images.kfcHurt; sWidth = assets.images.kfcHurt.width; sHeight = assets.images.kfcHurt.height; sx = 0; sy = 0; }
                         else if (w.type === 'armoredWoman') { imgToDraw = assets.images.armoredWoman; sWidth = imgToDraw.width; sHeight = imgToDraw.height / 5; sx = 0; sy = 4 * sHeight; }
+                        else if (w.type === 'downBoy') { imgToDraw = assets.images.downBoy; sWidth = imgToDraw.width; sHeight = imgToDraw.height / 5; sx = 0; sy = 1 * sHeight; }
+                        else if (w.type === 'toyCar') { imgToDraw = assets.images.toyCar; sWidth = imgToDraw.width / 2; sHeight = imgToDraw.height / 3; sx = 0; sy = 0; }
                         else { const hurtImg = w.type === 'woman' ? assets.images.womanHurt : assets.images.priestHurt; imgToDraw = hurtImg; sWidth = hurtImg.width; sHeight = hurtImg.height; sx = 0; sy = 0; }
                     }
                     
@@ -1844,7 +1995,7 @@
                         const hpPercent = Math.max(0, w.hp / w.maxHp);
                         const fillW = barW * hpPercent;
                         
-                        if (fillW > 0) {
+                        if (fillW > 0 && w.type !== 'toyCar') {
                             if (isMobile) {
                                 ctx.fillStyle = "#b32a30";
                             } else {
@@ -1858,7 +2009,7 @@
                             ctx.fillRect(barX, barY, fillW, barH);
                         }
 
-                        let hpText = Math.ceil(Math.max(0, w.hp)) + "/" + w.maxHp;
+                        let hpText = w.type !== 'toyCar' ? Math.ceil(Math.max(0, w.hp)) + "/" + w.maxHp : "";
 
                         if (w.maxArmor !== undefined && w.maxArmor > 0 && w.armor > 0) {
                             const armorPercent = Math.max(0, w.armor / w.maxArmor);
