@@ -100,7 +100,7 @@
         #btn-right { bottom: 30px; left: 96px; background-position: 0% 50%; }
         #btn-roll  { bottom: 30px; right: 96px; background-position: 100% 50%; }
         #btn-shoot { bottom: 30px; right: 30px; background-position: 0% 100%; }
-        #btn-swap  { bottom: 96px; right: 96px; background-position: 100% 100%; }
+        #btn-swap   { bottom: 96px; right: 96px; background-position: 100% 100%; }
 
         /* --- Orientation Warning Overlay --- */
         #orientation-warning {
@@ -758,58 +758,57 @@
                 handleEnemyDeath(w.associatedCar);
             }
 
-            if (enemiesKilled >= 30 && !laserWep.dropped) {
-                laserWep.dropped = true; updateWeaponSizes();
-                laserWep.x = w.x + (w.width / 2) - (laserWep.width / 2);
-                laserWep.y = w.y + (w.height / 2) - (laserWep.height / 2);
-                laserWep.vx = (Math.random() - 0.5) * 8 * GAME_CFG.WORLD_SCALE; laserWep.vy = (-8 - Math.random() * 6) * GAME_CFG.WORLD_SCALE;
-            }
+            // --- FIX: Check if within world boundaries [0, world.width] ---
+            const enemyCenterX = w.x + w.width / 2;
+            const isInsideWorld = enemyCenterX >= 0 && enemyCenterX <= world.width;
 
-            if (enemiesKilled >= 15 && !uzi.dropped) {
-                uzi.dropped = true; updateWeaponSizes(); 
-                uzi.x = w.x + (w.width / 2) - (uzi.width / 2);
-                uzi.y = w.y + (w.height / 2) - (uzi.height / 2); 
-                uzi.vx = (Math.random() - 0.5) * 8 * GAME_CFG.WORLD_SCALE; uzi.vy = (-8 - Math.random() * 6) * GAME_CFG.WORLD_SCALE; 
-            }
+            if (isInsideWorld) {
+                // Play sound only if within dimensions
+                playSound(w.type + 'Death');
 
-            if (!w.exploded) {
-                const pickupW = bulletWidth * 2.25;
-                const pickupH = bulletHeight * 2.25;
-
-                let curWep = player.currentWeapon === 'uzi' ? uzi : player.currentWeapon === 'laser' ? laserWep : pistol;
-                let ammoDropChance = Math.min(curWep.ammo < 15 ? 0.70 : 0.20, ammoPickups.length > 0 ? 0.40 : 1.0);
-                
-                if (Math.random() <= ammoDropChance) {
-                    ammoPickups.push({ x: w.x + (w.width / 2) - (pickupW / 2), y: w.y + (w.height / 2) - (pickupH / 2), vx: (Math.random() - 0.5) * 16 * GAME_CFG.WORLD_SCALE, vy: (-8 - Math.random() * 6) * GAME_CFG.WORLD_SCALE, floatY: 0 });
+                // Weapon Unlocks
+                if (enemiesKilled >= 30 && !laserWep.dropped) {
+                    laserWep.dropped = true; updateWeaponSizes();
+                    laserWep.x = w.x + (w.width / 2) - (laserWep.width / 2);
+                    laserWep.y = w.y + (w.height / 2) - (laserWep.height / 2);
+                    laserWep.vx = (Math.random() - 0.5) * 8 * GAME_CFG.WORLD_SCALE; laserWep.vy = (-8 - Math.random() * 6) * GAME_CFG.WORLD_SCALE;
                 }
 
-                let hpDropChance;
-                switch (true) {
-                    case (player.hp <= 1):
-                        hpDropChance = 0.50;
-                        break;
-                    case (player.hp === 2):
-                        hpDropChance = 0.40;
-                        break;
-                    case (player.hp === 3):
-                        hpDropChance = 0.30;
-                        break;
-                    case (player.hp === 4):
-                        hpDropChance = 0.20;
-                        break;
-                    default:
-                        hpDropChance = 0;
+                if (enemiesKilled >= 15 && !uzi.dropped) {
+                    uzi.dropped = true; updateWeaponSizes(); 
+                    uzi.x = w.x + (w.width / 2) - (uzi.width / 2);
+                    uzi.y = w.y + (w.height / 2) - (uzi.height / 2); 
+                    uzi.vx = (Math.random() - 0.5) * 8 * GAME_CFG.WORLD_SCALE; uzi.vy = (-8 - Math.random() * 6) * GAME_CFG.WORLD_SCALE; 
                 }
-                
-                hpDropChance = Math.max(0, hpDropChance - healthDropPenalty);
 
-                if (Math.random() <= hpDropChance) {
-                    const hw = assets.images.health.width * 0.078 * GAME_CFG.WORLD_SCALE, hh = assets.images.health.height * 0.078 * GAME_CFG.WORLD_SCALE;
-                    healthPickups.push({ x: w.x + (w.width / 2) - (hw / 2), y: w.y + (w.height / 2) - (hh / 2), vx: (Math.random() - 0.5) * 16 * GAME_CFG.WORLD_SCALE, vy: (-8 - Math.random() * 6) * GAME_CFG.WORLD_SCALE, floatY: 0 });
+                if (!w.exploded) {
+                    const pickupW = bulletWidth * 2.25;
+                    const pickupH = bulletHeight * 2.25;
+
+                    let curWep = player.currentWeapon === 'uzi' ? uzi : player.currentWeapon === 'laser' ? laserWep : pistol;
+                    let ammoDropChance = Math.min(curWep.ammo < 15 ? 0.70 : 0.20, ammoPickups.length > 0 ? 0.40 : 1.0);
+                    
+                    if (Math.random() <= ammoDropChance) {
+                        ammoPickups.push({ x: w.x + (w.width / 2) - (pickupW / 2), y: w.y + (w.height / 2) - (pickupH / 2), vx: (Math.random() - 0.5) * 16 * GAME_CFG.WORLD_SCALE, vy: (-8 - Math.random() * 6) * GAME_CFG.WORLD_SCALE, floatY: 0 });
+                    }
+
+                    let hpDropChance;
+                    switch (true) {
+                        case (player.hp <= 1): hpDropChance = 0.50; break;
+                        case (player.hp === 2): hpDropChance = 0.40; break;
+                        case (player.hp === 3): hpDropChance = 0.30; break;
+                        case (player.hp === 4): hpDropChance = 0.20; break;
+                        default: hpDropChance = 0;
+                    }
+                    
+                    hpDropChance = Math.max(0, hpDropChance - healthDropPenalty);
+
+                    if (Math.random() <= hpDropChance) {
+                        const hw = assets.images.health.width * 0.078 * GAME_CFG.WORLD_SCALE, hh = assets.images.health.height * 0.078 * GAME_CFG.WORLD_SCALE;
+                        healthPickups.push({ x: w.x + (w.width / 2) - (hw / 2), y: w.y + (w.height / 2) - (hh / 2), vx: (Math.random() - 0.5) * 16 * GAME_CFG.WORLD_SCALE, vy: (-8 - Math.random() * 6) * GAME_CFG.WORLD_SCALE, floatY: 0 });
+                    }
                 }
             }
-
-            playSound(w.type + 'Death');
         }
 
         function resetGame() {
@@ -896,7 +895,7 @@
             const newIntervals = Math.floor(pistolActiveTimeMs / 30000);
             if (newIntervals > difficultyIntervals) {
                 difficultyIntervals = newIntervals;
-                enemySizeMultiplier *= 1.03; 
+                // enemySizeMultiplier *= 1.03;
                 enemyBonusHP *= 1.03; 
                 enemyBonusArmor *= 1.03;
                 healthDropPenalty += 0.01;
@@ -1114,7 +1113,7 @@
             player.x += player.vx; player.vy += player.gravity; player.y += player.vy;
 
             if (player.y + player.height >= floorY) {
-                player.y = floorY - player.height; player.vy = 0; player.isGrounded = true;         
+                player.y = floorY - player.height; player.vy = 0; player.isGrounded = true;          
             } else { player.isGrounded = false; }
 
             const isActuallyWalking = (intentLeft || intentRight) && player.isGrounded && !player.isShooting && !player.isRolling && !player.isMeleeing;
@@ -1246,21 +1245,21 @@
                              const wHitX = w.x + hOffX, wHitY = w.y + hOffY, wHitW = w.width - hRedW, wHitH = w.height - hRedH;
 
                              if (hitX < wHitX + wHitW && hitX + hitboxWidth > wHitX && hitY < wHitY + wHitH && hitY + hitH > wHitY) {
-                                 player.hitEnemiesThisMeleeFrame.push(w);
-                                 
-                                 playSound('meleeHit');
+                                  player.hitEnemiesThisMeleeFrame.push(w);
+                                  
+                                  playSound('meleeHit');
 
-                                 applyEnemyDamage(w, 10, true);
-                                 w.vx = player.facingLeft ? -1.5 * GAME_CFG.WORLD_SCALE : 1.5 * GAME_CFG.WORLD_SCALE;
-                                 w.vy = -3 * GAME_CFG.WORLD_SCALE;
-                                 
-                                 if (w.hp <= 0) handleEnemyDeath(w);
-                                 else {
-                                     if (!w.isTicking) {
-                                         w.currentState = 'hurt'; w.hurtTimer = 200; w.isBlinking = true; w.blinkTimer = 80;
-                                     }
-                                     if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
-                                 }
+                                  applyEnemyDamage(w, 10, true);
+                                  w.vx = player.facingLeft ? -1.5 * GAME_CFG.WORLD_SCALE : 1.5 * GAME_CFG.WORLD_SCALE;
+                                  w.vy = -3 * GAME_CFG.WORLD_SCALE;
+                                  
+                                  if (w.hp <= 0) handleEnemyDeath(w);
+                                  else {
+                                      if (!w.isTicking) {
+                                          w.currentState = 'hurt'; w.hurtTimer = 200; w.isBlinking = true; w.blinkTimer = 80;
+                                      }
+                                      if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
+                                  }
                              }
                         }
                     }
@@ -1318,6 +1317,15 @@
                 if (player.x < h.x + hpW && pRightEdge > h.x && player.y < hHitY + hpH && player.y + player.height > hHitY) {
                     player.hp += 1; healthPickups.splice(i, 1);
                     playSound('pickup');
+                }
+            }
+
+            // --- Manage Active Lasers ---
+            for (let i = activeLasers.length - 1; i >= 0; i--) {
+                let l = activeLasers[i];
+                l.life -= GAME_CFG.TIME_STEP;
+                if (l.life <= 0) {
+                    activeLasers.splice(i, 1);
                 }
             }
 
@@ -1597,8 +1605,7 @@
             for (let i = throwingStars.length - 1; i >= 0; i--) {
                 let s = throwingStars[i];
                 s.vy += 0.225 * GAME_CFG.WORLD_SCALE; s.x += s.vx; s.y += s.vy; s.rotation += (s.vx > 0 ? 0.45 : -0.45);
-                const sW = starWidth * s.scale;
-                const sH = starHeight * s.scale;
+                const sW = starWidth * s.scale, sH = starHeight * s.scale;
 
                 if (s.y + sH >= floorY) { throwingStars.splice(i, 1); continue; }
 
@@ -1817,7 +1824,6 @@
                 ctx.lineJoin = "round";
                 for (let i = activeLasers.length - 1; i >= 0; i--) {
                     let l = activeLasers[i];
-                    l.life -= GAME_CFG.TIME_STEP;
                     
                     if (!isMobile) {
                         ctx.shadowColor = 'cyan';
@@ -1842,8 +1848,6 @@
                     ctx.lineWidth = 2 * GAME_CFG.WORLD_SCALE;
                     ctx.strokeStyle = "rgba(255, 255, 255, 1)";
                     ctx.stroke();
-                    
-                    if (l.life <= 0) activeLasers.splice(i, 1);
                 }
                 ctx.restore();
 
