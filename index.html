@@ -1285,17 +1285,24 @@
             if (world.width > 0 && pistol.pickedUp) {
                 if (pistolActiveTimeMs >= nextSpawnTargetMs) {
                     let unlockedPool = [];
-                    if (pistolActiveTimeMs >= 0) unlockedPool.push('woman');
+                    if (pistolActiveTimeMs >= 1000) unlockedPool.push('woman');
                     if (pistolActiveTimeMs >= 6000) unlockedPool.push('priest');
-                    if (pistolActiveTimeMs >= 9000) unlockedPool.push('monk');
-                    if (pistolActiveTimeMs >= 12000) unlockedPool.push('bear');
-                    if (pistolActiveTimeMs >= 15000) unlockedPool.push('kfc');
-                    if (pistolActiveTimeMs >= 18000) unlockedPool.push('armoredWoman');
-                    if (pistolActiveTimeMs >= 21000) unlockedPool.push('downBoy');
+                    if (pistolActiveTimeMs >= 11000) unlockedPool.push('monk');
+                    if (pistolActiveTimeMs >= 16000) unlockedPool.push('bear');
+                    if (pistolActiveTimeMs >= 21000) unlockedPool.push('kfc');
+                    if (pistolActiveTimeMs >= 26000) unlockedPool.push('armoredWoman');
+                    if (pistolActiveTimeMs >= 31000) unlockedPool.push('downBoy');
 
                     if (unlockedPool.length > 0) {
-                        const randomEnemyType = unlockedPool[Math.floor(Math.random() * unlockedPool.length)];
-                        spawnEnemy(randomEnemyType);
+                        let selectedEnemyType = unlockedPool[0]; // Fallback to 100% chance for the weakest enemy
+                        for (let i = unlockedPool.length - 1; i > 0; i--) {
+                            if (Math.random() <= 0.25) {
+                                selectedEnemyType = unlockedPool[i];
+                                break;
+                            }
+                        }
+                        
+                        spawnEnemy(selectedEnemyType);
 
                         nextSpawnTargetMs += currentSpawnIntervalMs;
                         currentSpawnIntervalMs = Math.max(500, currentSpawnIntervalMs - 10); 
