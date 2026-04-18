@@ -34,7 +34,7 @@
             content: "";
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url('resources/backgrounds/web_page_background.png'); 
+            background-image: url('resources/backgrounds/web_page_background.webp'); 
             background-repeat: repeat;
             background-size: var(--bg-size, auto); 
             opacity: 0.07; 
@@ -80,7 +80,7 @@
             user-select: none;
             -webkit-user-select: none;
             transition: opacity 0.2s, background-color 0.2s, transform 0.1s, filter 0.2s; 
-            background-image: url('resources/hud/mobile_buttons_sprite_sheet.png');
+            background-image: url('resources/hud/mobile_buttons_sprite_sheet.webp');
             background-size: 200% 300%;
             background-repeat: no-repeat;
         }
@@ -226,40 +226,40 @@
 
         const assets = { images: {}, audio: {} };
         const imageSources = {
-            jumpImage: 'resources/player/player_jumping.png', 
-            accessories: 'resources/backgrounds/web_page_background.png',
-            background: 'resources/backgrounds/canvas_background.png',
-            pistol: 'resources/weapons/weapon_pistol.png',
-            uzi: 'resources/weapons/weapon_uzi.png',
-            laser: 'resources/weapons/weapon_laser.png',
-            walk: 'resources/player/player_walking_sprite_sheet.png',
-            idle: 'resources/player/player_idling_sprite_sheet.png',
-            aim: 'resources/player/player_shooting_pistol_sprite_sheet.png',
-            uziAim: 'resources/player/player_shooting_uzi_sprite_sheet.png',
-            laserAim: 'resources/player/player_shooting_laser_sprite_sheet.png',
-            roll: 'resources/player/dos_rolling.png',
-            melee: 'resources/player/player_melee_sprite_sheet.png',
-            health: 'resources/loot/loot_hp.png',
-            gameOver: 'resources/hud/game_over_image.png',
-            keyboardKey: 'resources/hud/keyboard_key.png',
-            bullet: 'resources/loot/loot_ammo.png',
-            star: 'resources/enemies/woman/woman_projectile.png',
-            cross: 'resources/enemies/priest/priest_projectile.png',
-            womanIdle: 'resources/enemies/woman/woman_attacking_sprite_sheet.png',
-            womanHurt: 'resources/enemies/woman/woman_hurt.png',
-            priestIdle: 'resources/enemies/priest/priest_attacking_sprite_sheet.png',
-            priestHurt: 'resources/enemies/priest/priest_hurt.png',
-            monkIdle: 'resources/enemies/monk/monk_idling_hurt_sprite_sheet.png',
-            bearIdle: 'resources/enemies/bear/bear_idling_sprite_sheet.png',
-            bearRun: 'resources/enemies/bear/bear_moving_sprite_sheet.png',
-            bearHurt: 'resources/enemies/bear/bear_hurt.png',
-            bearAttack: 'resources/enemies/bear/bear_attacking_sprite_sheet.png',
-            kfcRun: 'resources/enemies/kfc/kfc_moving_sprite_sheet.png',
-            kfcHurt: 'resources/enemies/kfc/kfc_hurt.png',
-            armoredWoman: 'resources/enemies/armored_woman/armored_woman_sprite_sheet.png',
-            snowParticle: 'resources/enemies/armored_woman/armored_woman_projectile.png',
-            downBoy: 'resources/enemies/down_boy/down_boy_sprite_sheet.png',
-            toyCar: 'resources/enemies/down_boy/toy_car_sprite_sheet.png'
+            jumpImage: 'resources/player/player_jumping.webp', 
+            accessories: 'resources/backgrounds/web_page_background.webp',
+            background: 'resources/backgrounds/canvas_background.webp',
+            pistol: 'resources/weapons/weapon_pistol.webp',
+            uzi: 'resources/weapons/weapon_uzi.webp',
+            laser: 'resources/weapons/weapon_laser.webp',
+            walk: 'resources/player/player_walking_sprite_sheet.webp',
+            idle: 'resources/player/player_idling_sprite_sheet.webp',
+            aim: 'resources/player/player_shooting_pistol_sprite_sheet.webp',
+            uziAim: 'resources/player/player_shooting_uzi_sprite_sheet.webp',
+            laserAim: 'resources/player/player_shooting_laser_sprite_sheet.webp',
+            roll: 'resources/player/dos_rolling.webp',
+            melee: 'resources/player/player_melee_sprite_sheet.webp',
+            health: 'resources/loot/loot_hp.webp',
+            gameOver: 'resources/hud/game_over_image.webp',
+            keyboardKey: 'resources/hud/keyboard_key.webp',
+            bullet: 'resources/loot/loot_ammo.webp',
+            star: 'resources/enemies/woman/woman_projectile.webp',
+            cross: 'resources/enemies/priest/priest_projectile.webp',
+            womanIdle: 'resources/enemies/woman/woman_attacking_sprite_sheet.webp',
+            womanHurt: 'resources/enemies/woman/woman_hurt.webp',
+            priestIdle: 'resources/enemies/priest/priest_attacking_sprite_sheet.webp',
+            priestHurt: 'resources/enemies/priest/priest_hurt.webp',
+            monkIdle: 'resources/enemies/monk/monk_idling_hurt_sprite_sheet.webp',
+            bearIdle: 'resources/enemies/bear/bear_idling_sprite_sheet.webp',
+            bearRun: 'resources/enemies/bear/bear_moving_sprite_sheet.webp',
+            bearHurt: 'resources/enemies/bear/bear_hurt.webp',
+            bearAttack: 'resources/enemies/bear/bear_attacking_sprite_sheet.webp',
+            kfcRun: 'resources/enemies/kfc/kfc_moving_sprite_sheet.webp',
+            kfcHurt: 'resources/enemies/kfc/kfc_hurt.webp',
+            armoredWoman: 'resources/enemies/armored_woman/armored_woman_sprite_sheet.webp',
+            snowParticle: 'resources/enemies/armored_woman/armored_woman_projectile.webp',
+            downBoy: 'resources/enemies/down_boy/down_boy_sprite_sheet.webp',
+            toyCar: 'resources/enemies/down_boy/toy_car_sprite_sheet.webp'
         };
         const audioSources = {
             bgMusic: 'resources/sounds/background_music.mp3',
@@ -613,8 +613,8 @@
             baseSizes.monk.h = assets.images.monkIdle.height * (GAME_CFG.ENEMY_SCALE * 2.77) * GAME_CFG.WORLD_SCALE;
             baseSizes.bear.w = (assets.images.bearRun.width / 3) * (GAME_CFG.ENEMY_SCALE * 2.218) * GAME_CFG.WORLD_SCALE;
             baseSizes.bear.h = (assets.images.bearRun.height / 7) * (GAME_CFG.ENEMY_SCALE * 2.218) * GAME_CFG.WORLD_SCALE;
-            baseSizes.kfc.w = (assets.images.kfcRun.width / 3) * (GAME_CFG.ENEMY_SCALE * 2.27) * GAME_CFG.WORLD_SCALE;
-            baseSizes.kfc.h = (assets.images.kfcRun.height / 14) * (GAME_CFG.ENEMY_SCALE * 2.27) * GAME_CFG.WORLD_SCALE;
+            baseSizes.kfc.w = (assets.images.kfcRun.width / 6) * (GAME_CFG.ENEMY_SCALE * 2.27) * GAME_CFG.WORLD_SCALE;
+            baseSizes.kfc.h = (assets.images.kfcRun.height / 7) * (GAME_CFG.ENEMY_SCALE * 2.27) * GAME_CFG.WORLD_SCALE;
             
             baseSizes.armoredWoman.w = assets.images.armoredWoman.width * (GAME_CFG.ENEMY_SCALE * 2.46) * GAME_CFG.WORLD_SCALE;
             baseSizes.armoredWoman.h = (assets.images.armoredWoman.height / 5) * (GAME_CFG.ENEMY_SCALE * 2.46) * GAME_CFG.WORLD_SCALE;
@@ -699,7 +699,7 @@
             else if(type === 'priest') frameDurs = [1500, 1000, 700];
             else if(type === 'monk') { frameDurs = [1100, 300]; tFrames = 2; }
             else if(type === 'bear') { r = 7; tFrames = 21; }
-            else if(type === 'kfc') { r = 14; tFrames = 42; frameDurs = new Array(42).fill(15); }
+            else if(type === 'kfc') { r = 7; c = 6; tFrames = 42; frameDurs = new Array(42).fill(15); }
             else if(type === 'armoredWoman') { frameDurs = [1000, 300, 800, 1500]; r = 5; c = 1; tFrames = 4; }
             else if(type === 'downBoy') { frameDurs = [1000, 300, 1000, 1000, 300]; r = 5; c = 1; tFrames = 5; }
             else if(type === 'toyCar') { frameDurs = [30, 30, 30, 30, 30, 30]; r = 3; c = 2; tFrames = 6; }
@@ -1124,7 +1124,7 @@
             player.x += player.vx; player.vy += player.gravity; player.y += player.vy;
 
             if (player.y + player.height >= floorY) {
-                player.y = floorY - player.height; player.vy = 0; player.isGrounded = true;          
+                player.y = floorY - player.height; player.vy = 0; player.isGrounded = true;         
             } else { player.isGrounded = false; }
 
             const isActuallyWalking = (intentLeft || intentRight) && player.isGrounded && !player.isShooting && !player.isRolling && !player.isMeleeing;
@@ -1694,7 +1694,7 @@
         // --- Render logic ---
         const cornerAnims = [
             { id: 'walk',  key: 'walk',  started: false, finished: false, timer: 0, frame: 0, cols: 6, rows: 6, total: 36, flip: false, corner: 'BL1', scale: 0.3 },
-            { id: 'kfc',   key: 'kfcRun',started: false, finished: false, timer: 0, frame: 0, cols: 3, rows: 14, total: 42, flip: false,  corner: 'BL2', scale: 0.25 },
+            { id: 'kfc',   key: 'kfcRun',started: false, finished: false, timer: 0, frame: 0, cols: 6, rows: 7, total: 42, flip: false,  corner: 'BL2', scale: 0.25 },
             { id: 'idle',  key: 'idle',  started: false, finished: false, timer: 0, frame: 0, cols: 5, rows: 8, total: 40, flip: false, corner: 'BL3', scale: 0.3 },
             { id: 'melee', key: 'melee', started: false, finished: false, timer: 0, frame: 0, cols: 8, rows: 9, total: 72, flip: false,  corner: 'BL4', scale: 0.3 }
         ];
