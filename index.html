@@ -290,11 +290,22 @@
         function loadAsset(type, key, src) {
             return new Promise(async (resolve, reject) => {
                 if (type === 'image') {
-                    const img = new Image();
-                    img.onload = () => { loadedAssets++; resolve(); };
-                    img.onerror = () => { console.warn(`Failed to load ${src}`); resolve(); };
-                    img.src = src;
-                    assets.images[key] = img;
+                    try {
+                        const response = await fetch(src);
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        const blob = await response.blob();
+                        
+                        // Decodes the image off the main thread and makes it GPU-ready
+                        const bitmap = await createImageBitmap(blob);
+                        assets.images[key] = bitmap;
+                        
+                        loadedAssets++;
+                        resolve();
+                    } catch (e) {
+                        console.warn(`Failed to load or decode ${src}`, e);
+                        loadedAssets++; // Resolve anyway to prevent hanging the load screen
+                        resolve();
+                    }
                 } else {
                     if (key === 'bgMusic') {
                         const aud = new Audio();
@@ -1698,7 +1709,7 @@
 
                 for(let anim of cornerAnims) {
                     const img = assets.images[anim.key];
-                    if (img && img.complete && img.naturalWidth > 0 && !anim.finished) {
+                    if (img && img.width > 0 && !anim.finished) {
                         anim.started = true;
                     }
                     
@@ -1771,7 +1782,7 @@
             // Render either "Tap to Play" or the standard loading bar based on state
             if (gameState === 'TAP_TO_START') {                
                 ctx.fillText('Tap to Continue', 0, 200);
-                if (assets.images.jumpImage && assets.images.jumpImage.complete && assets.images.jumpImage.naturalWidth > 0) {
+                if (assets.images.jumpImage && assets.images.jumpImage.width > 0) {
                     const drawW = assets.images.jumpImage.width * player.jumpScale * GAME_CFG.WORLD_SCALE;
                     const drawH = assets.images.jumpImage.height * player.jumpScale * GAME_CFG.WORLD_SCALE;
                     
@@ -2315,8 +2326,8 @@
                         renderHigh = Math.max(highScoreAtDeath, scoreAtDeath);
                     }
                     
-                    if (assets.images.gameOver && assets.images.gameOver.naturalWidth > 0) {
-                        const scale = 0.12, scaledWidth = assets.images.gameOver.naturalWidth * scale, scaledHeight = assets.images.gameOver.naturalHeight * scale; // Scaled up image
+                    if (assets.images.gameOver && assets.images.gameOver.width > 0) {
+                        const scale = 0.12, scaledWidth = assets.images.gameOver.width * scale, scaledHeight = assets.images.gameOver.height * scale; // Scaled up image
                         const goX = logicalViewW / 2 - scaledWidth / 2, goY = logicalViewH / 2 - scaledHeight / 2 - 100;
                         ctx.drawImage(assets.images.gameOver, goX, goY, scaledWidth, scaledHeight);
                         ctx.font = "bold 28px sans-serif"; // Scaled up
