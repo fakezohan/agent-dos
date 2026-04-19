@@ -165,6 +165,7 @@
             roll: { volume: 0.6, rate: 1.0 },
             shot: { volume: 0.4, rate: 2.0 },
             laserShot: { volume: 0.2, rate: 1.0 },
+            revolverShot: { volume: 0.5, rate: 1.0 },
             meleeHit: { volume: 0.2, rate: 3.0 },
             playerHurt: { volume: 0.4, rate: 3.0 },
             womanHurt: { volume: 0.4, rate: 3.0 },
@@ -232,11 +233,13 @@
             pistol: 'resources/weapons/weapon_pistol.webp',
             uzi: 'resources/weapons/weapon_uzi.webp',
             laser: 'resources/weapons/weapon_laser.webp',
+            revolver: 'resources/weapons/weapon_revolver.webp',
             walk: 'resources/player/player_walking_sprite_sheet.webp',
             idle: 'resources/player/player_idling_sprite_sheet.webp',
             aim: 'resources/player/player_shooting_pistol_sprite_sheet.webp',
             uziAim: 'resources/player/player_shooting_uzi_sprite_sheet.webp',
             laserAim: 'resources/player/player_shooting_laser_sprite_sheet.webp',
+            revolverAim: 'resources/player/player_shooting_revolver_sprite_sheet.webp',
             roll: 'resources/player/dos_rolling.webp',
             melee: 'resources/player/player_melee_sprite_sheet.webp',
             health: 'resources/loot/loot_hp.webp',
@@ -269,6 +272,7 @@
             roll: 'resources/sounds/player_rolling_sound_effect.mp3',
             shot: 'resources/sounds/shot_sound.mp3',
             laserShot: 'resources/sounds/laser_sound.mp3',
+            revolverShot: 'resources/sounds/revolver_shot_sound_effect.mp3',
             meleeHit: 'resources/sounds/player_melee_sound_effect.mp3',
             playerHurt: 'resources/sounds/player_hurt_sound_effect.mp3',
             womanHurt: 'resources/sounds/woman_hurt_sound_effect.mp3',
@@ -389,6 +393,7 @@
             aimCols: 2, aimRows: 1, aimTotalFrames: 2,
             uziAimCols: 2, uziAimRows: 1, uziAimTotalFrames: 2,
             laserAimCols: 2, laserAimRows: 1, laserAimTotalFrames: 2,
+            revolverAimCols: 2, revolverAimRows: 1, revolverAimTotalFrames: 2,
             jumpCols: 1, jumpRows: 1, jumpTotalFrames: 1,
             meleeCols: 8, meleeRows: 9, meleeTotalFrames: 72,
 
@@ -405,6 +410,7 @@
         const pistol = { x: 0, y: 0, width: 0, height: 0, pickedUp: false, floatY: 0, floatSpeed: 0.005, floatAmplitude: 0, sizeRatio: 0.60, ammo: 0, maxAmmo: 15 };
         const uzi = { x: 0, y: 0, width: 0, height: 0, dropped: false, pickedUp: false, floatY: 0, floatSpeed: 0.005, floatAmplitude: 0, sizeRatio: 0.48, vx: 0, vy: 0, ammo: 0, maxAmmo: 50 };
         const laserWep = { x: 0, y: 0, width: 0, height: 0, dropped: false, pickedUp: false, floatY: 0, floatSpeed: 0.005, floatAmplitude: 0, sizeRatio: 0.60, vx: 0, vy: 0, ammo: 0, maxAmmo: 40 };
+        const revolver = { x: 0, y: 0, width: 0, height: 0, dropped: false, pickedUp: false, floatY: 0, floatSpeed: 0.005, floatAmplitude: 0, sizeRatio: 0.60, vx: 0, vy: 0, ammo: 0, maxAmmo: 6 };
 
         let bullets = [], activeLasers = [], ammoPickups = [], healthPickups = [], throwingStars = [], crosses = [], enemies = [], rainbowHearts = [];
         let bulletWidth = 0, bulletHeight = 0, starWidth = 0, starHeight = 0, crossWidth = 0, crossHeight = 0;
@@ -436,7 +442,7 @@
         }
 
         // --- Input Handling ---
-        const keys = { w: false, a: false, s: false, d: false, k: false, p: false, '1': false, '2': false, '3': false };
+        const keys = { w: false, a: false, s: false, d: false, k: false, p: false, '1': false, '2': false, '3': false, '4': false };
         const mobileKeys = { left: false, right: false, shoot: false, roll: false, melee: false, swap: false };
         const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
@@ -518,6 +524,7 @@
                                 if (pistol.pickedUp) availableWeapons.push('pistol');
                                 if (uzi.pickedUp) availableWeapons.push('uzi');
                                 if (laserWep.pickedUp) availableWeapons.push('laser');
+                                if (revolver.pickedUp) availableWeapons.push('revolver');
                                 
                                 if (availableWeapons.length > 1) {
                                     let idx = availableWeapons.indexOf(player.currentWeapon);
@@ -597,6 +604,7 @@
             pistol.floatAmplitude = 15 * GAME_CFG.WORLD_SCALE;
             uzi.floatAmplitude = 15 * GAME_CFG.WORLD_SCALE;
             laserWep.floatAmplitude = 15 * GAME_CFG.WORLD_SCALE;
+            revolver.floatAmplitude = 15 * GAME_CFG.WORLD_SCALE;
 
             player.width = (assets.images.walk.width / player.walkCols) * player.scale * GAME_CFG.WORLD_SCALE;
             player.height = (assets.images.walk.height / player.walkRows) * player.scale * GAME_CFG.WORLD_SCALE;
@@ -653,6 +661,12 @@
                     const lTarget = player.height * laserWep.sizeRatio;
                     laserWep.height = lTarget;
                     laserWep.width = lTarget * (assets.images.laser.width / assets.images.laser.height);
+                }
+
+                if (assets.images.revolver && assets.images.revolver.width > 0) {
+                    const revTarget = player.height * revolver.sizeRatio;
+                    revolver.height = revTarget;
+                    revolver.width = revTarget * (assets.images.revolver.width / assets.images.revolver.height);
                 }
             }
         }
@@ -781,6 +795,13 @@
                 playSound(w.type + 'Death');
 
                 // Weapon Unlocks
+                if (enemiesKilled >= 1 && !revolver.dropped) {
+                    revolver.dropped = true; updateWeaponSizes();
+                    revolver.x = w.x + (w.width / 2) - (revolver.width / 2);
+                    revolver.y = w.y + (w.height / 2) - (revolver.height / 2);
+                    revolver.vx = (Math.random() - 0.5) * 8 * GAME_CFG.WORLD_SCALE; revolver.vy = (-8 - Math.random() * 6) * GAME_CFG.WORLD_SCALE;
+                }
+
                 if (enemiesKilled >= 30 && !laserWep.dropped) {
                     laserWep.dropped = true; updateWeaponSizes();
                     laserWep.x = w.x + (w.width / 2) - (laserWep.width / 2);
@@ -799,7 +820,7 @@
                     const pickupW = bulletWidth * 2.25;
                     const pickupH = bulletHeight * 2.25;
 
-                    let curWep = player.currentWeapon === 'uzi' ? uzi : player.currentWeapon === 'laser' ? laserWep : pistol;
+                    let curWep = player.currentWeapon === 'uzi' ? uzi : player.currentWeapon === 'laser' ? laserWep : player.currentWeapon === 'revolver' ? revolver : pistol;
                     let ammoDropChance;
                     switch (true) {
                         case (ammoPickups.length <= 1): ammoDropChance = 0.50; break;
@@ -848,6 +869,7 @@
             pistol.pickedUp = false; pistol.ammo = 0; pistol.x = 600 * GAME_CFG.WORLD_SCALE; pistol.y = 855 * GAME_CFG.WORLD_SCALE;
             uzi.pickedUp = false; uzi.dropped = false; uzi.ammo = 0; uzi.vx = 0; uzi.vy = 0;
             laserWep.pickedUp = false; laserWep.dropped = false; laserWep.ammo = 0; laserWep.vx = 0; laserWep.vy = 0;
+            revolver.pickedUp = false; revolver.dropped = false; revolver.ammo = 0; revolver.vx = 0; revolver.vy = 0;
             
             enemiesKilled = 0; currentScore = 0; gameState = 'PLAYING';
             
@@ -933,6 +955,7 @@
                 if (pistol.pickedUp) weaponsCount++;
                 if (uzi.pickedUp) weaponsCount++;
                 if (laserWep.pickedUp) weaponsCount++;
+                if (revolver.pickedUp) weaponsCount++;
 
                 const swapBtn = document.getElementById('btn-swap');
                 if (swapBtn) {
@@ -966,6 +989,7 @@
             if (keys['1'] && pistol.pickedUp) player.currentWeapon = 'pistol';
             if (keys['2'] && uzi.pickedUp) player.currentWeapon = 'uzi';
             if (keys['3'] && laserWep.pickedUp) player.currentWeapon = 'laser';
+            if (keys['4'] && revolver.pickedUp) player.currentWeapon = 'revolver';
 
             let isMoving = false;
 
@@ -975,7 +999,7 @@
             if (player.isBlinking) { player.blinkTimer -= GAME_CFG.TIME_STEP; if (player.blinkTimer <= 0) player.isBlinking = false; }
             if (player.isShooting) { player.shootTimer -= GAME_CFG.TIME_STEP; if (player.shootTimer <= 0) player.isShooting = false; }
 
-            let activeWeapon = player.currentWeapon === 'uzi' ? uzi : player.currentWeapon === 'laser' ? laserWep : pistol;
+            let activeWeapon = player.currentWeapon === 'uzi' ? uzi : player.currentWeapon === 'laser' ? laserWep : player.currentWeapon === 'revolver' ? revolver : pistol;
 
             // --- INTENT EVALUATION FOR BOTH PC & MOBILE ---
             const intentLeft = keys.a || mobileKeys.left;
@@ -1000,7 +1024,7 @@
             }
             else if (intentShoot && !player.isShooting && !player.isRolling && player.isGrounded && activeWeapon.pickedUp && (player.currentWeapon === 'laser' ? player.mana >= 6 : activeWeapon.ammo > 0)) {
                 player.isShooting = true;
-                player.shootTimer = player.currentWeapon === 'uzi' ? 100 : player.currentWeapon === 'laser' ? 150 : 200; 
+                player.shootTimer = player.currentWeapon === 'uzi' ? 100 : player.currentWeapon === 'laser' ? 150 : player.currentWeapon === 'revolver' ? 400 : 200; 
                 if (player.slowStack > 0) player.shootTimer = Math.floor(player.shootTimer / slowMult);
                 
                 if (player.currentWeapon === 'laser') {
@@ -1072,12 +1096,18 @@
                     bullets.push({
                         x: player.facingLeft ? player.x - bulletWidth + 25 * GAME_CFG.WORLD_SCALE: pRightEdge - 25 * GAME_CFG.WORLD_SCALE,
                         y: pyCenter - (bulletHeight / 2) - 43 * GAME_CFG.WORLD_SCALE,
-                        vx: player.facingLeft ? -60 * GAME_CFG.WORLD_SCALE : 60 * GAME_CFG.WORLD_SCALE, 
+                        vx: player.facingLeft ? -80 * GAME_CFG.WORLD_SCALE : 80 * GAME_CFG.WORLD_SCALE, 
                         vy: (Math.random() - 0.5) * (player.currentWeapon === 'uzi' ? 24 * GAME_CFG.WORLD_SCALE : 12 * GAME_CFG.WORLD_SCALE),
-                        damage: player.currentWeapon === 'uzi' ? 7 : 10 
+                        damage: player.currentWeapon === 'revolver' ? 60 : (player.currentWeapon === 'uzi' ? 7 : 10),
+                        weaponType: player.currentWeapon,
+                        hitEnemies: []
                     });
 
-                    playSound('shot', player.currentWeapon === 'uzi' ? 4.0 : 2.0);
+                    if (player.currentWeapon === 'revolver') {
+                        playSound('revolverShot', 1.0);
+                    } else {
+                        playSound('shot', player.currentWeapon === 'uzi' ? 4.0 : 2.0);
+                    }
                 }
 
                 // Check if the weapon just emptied and swap to the next available one
@@ -1089,6 +1119,8 @@
                         player.currentWeapon = 'uzi';
                     } else if (player.currentWeapon !== 'laser' && laserWep.pickedUp && player.mana >= 6) {
                         player.currentWeapon = 'laser';
+                    } else if (player.currentWeapon !== 'revolver' && revolver.pickedUp && revolver.ammo > 0) {
+                        player.currentWeapon = 'revolver';
                     }
                 }
             } else {
@@ -1187,6 +1219,19 @@
                 }
             }
 
+            if (revolver.dropped && !revolver.pickedUp && revolver.width > 0) {
+                revolver.vy += player.gravity; revolver.x += revolver.vx; revolver.y += revolver.vy;
+                revolver.x = Math.max(0, Math.min(revolver.x, world.width - revolver.width));
+                if (revolver.y + revolver.height >= floorY) { revolver.y = floorY - revolver.height; revolver.vy = 0; revolver.vx = 0; }
+                revolver.floatY = Math.sin(frameTimeNow * revolver.floatSpeed) * revolver.floatAmplitude;
+
+                const rHitX = revolver.x + 25 * GAME_CFG.WORLD_SCALE, rHitW = revolver.width - 50 * GAME_CFG.WORLD_SCALE;
+                if (player.x < rHitX + rHitW && pRightEdge > rHitX && player.y < revolver.y + revolver.height && player.y + player.height > revolver.y) {
+                    revolver.pickedUp = true; revolver.ammo = revolver.maxAmmo; player.currentWeapon = 'revolver'; 
+                    playSound('pickup');
+                }
+            }
+
             if (!player.isGrounded) isMoving = true; 
             let newState = player.isRolling ? 'rolling' : player.isMeleeing ? 'melee' : player.isShooting ? 'aiming' : !player.isGrounded ? 'jumping' : isMoving ? 'walk' : 'idle';
 
@@ -1211,8 +1256,8 @@
 
             let totalFrames, currentFrameInterval = player.defaultFrameInterval;
             if (player.currentState === 'aiming') {
-                totalFrames = player.currentWeapon === 'uzi' ? player.uziAimTotalFrames : player.currentWeapon === 'laser' ? player.laserAimTotalFrames : player.aimTotalFrames;
-                currentFrameInterval = player.currentWeapon === 'uzi' ? 50 : player.currentWeapon === 'laser' ? 66 : 100;
+                totalFrames = player.currentWeapon === 'uzi' ? player.uziAimTotalFrames : player.currentWeapon === 'laser' ? player.laserAimTotalFrames : player.currentWeapon === 'revolver' ? player.revolverAimTotalFrames : player.aimTotalFrames;
+                currentFrameInterval = player.currentWeapon === 'uzi' ? 50 : player.currentWeapon === 'laser' ? 66 : player.currentWeapon === 'revolver' ? 200 : 100;
             } else if (player.currentState === 'jumping') {
                 totalFrames = player.jumpTotalFrames;
             } else if (player.currentState === 'melee') {
@@ -1330,6 +1375,7 @@
                     let missingAmmo = 0;
                     if (pistol.pickedUp) { missingAmmo += (pistol.maxAmmo - pistol.ammo); pistol.ammo = pistol.maxAmmo; }
                     if (uzi.pickedUp) { missingAmmo += (uzi.maxAmmo - uzi.ammo); uzi.ammo = uzi.maxAmmo; }
+                    if (revolver.pickedUp) { missingAmmo += (revolver.maxAmmo - revolver.ammo); revolver.ammo = revolver.maxAmmo; }
                     if (missingAmmo > 0) {
                         ammoPickups.splice(i, 1);
                         playSound('pickup');
@@ -1694,18 +1740,41 @@
                     const wHitX = w.x + hOffX, wHitY = w.y + hOffY, wHitW = w.width - hRedW, wHitH = w.height - hRedH;
 
                     if (b.x < wHitX + wHitW && b.x + bulletWidth > wHitX && b.y < wHitY + wHitH && b.y + bulletHeight > wHitY) {
-                        w.vx = (b.vx > 0) ? 0.625 * GAME_CFG.WORLD_SCALE : -0.625 * GAME_CFG.WORLD_SCALE; w.vy = -4 * GAME_CFG.WORLD_SCALE; 
-                        
-                        applyEnemyDamage(w, b.damage);
+                        if (b.weaponType === 'revolver') {
+                            if (!b.hitEnemies) b.hitEnemies = [];
+                            if (b.hitEnemies.includes(w)) continue;
+                            
+                            w.vx = (b.vx > 0) ? 0.625 * GAME_CFG.WORLD_SCALE : -0.625 * GAME_CFG.WORLD_SCALE; w.vy = -4 * GAME_CFG.WORLD_SCALE; 
+                            applyEnemyDamage(w, b.damage);
 
-                        if (w.hp <= 0) handleEnemyDeath(w);
-                        else {
-                            if (!w.isTicking) {
-                                w.currentState = 'hurt'; w.hurtTimer = 200; w.isBlinking = true; w.blinkTimer = 80;       
+                            if (w.hp <= 0) handleEnemyDeath(w);
+                            else {
+                                if (!w.isTicking) {
+                                    w.currentState = 'hurt'; w.hurtTimer = 200; w.isBlinking = true; w.blinkTimer = 80;        
+                                }
+                                if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
                             }
-                            if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
+
+                            b.hitEnemies.push(w);
+                            if (b.hitEnemies.length === 1) {
+                                b.damage = 30; // Reduce damage for the second hit
+                            } else {
+                                bullets.splice(i, 1); hitRegistered = true; break; 
+                            }
+                        } else {
+                            w.vx = (b.vx > 0) ? 0.625 * GAME_CFG.WORLD_SCALE : -0.625 * GAME_CFG.WORLD_SCALE; w.vy = -4 * GAME_CFG.WORLD_SCALE; 
+                            
+                            applyEnemyDamage(w, b.damage);
+
+                            if (w.hp <= 0) handleEnemyDeath(w);
+                            else {
+                                if (!w.isTicking) {
+                                    w.currentState = 'hurt'; w.hurtTimer = 200; w.isBlinking = true; w.blinkTimer = 80;        
+                                }
+                                if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
+                            }
+                            bullets.splice(i, 1); hitRegistered = true; break; 
                         }
-                        bullets.splice(i, 1); hitRegistered = true; break; 
                     }
                 }
                 if (!hitRegistered && (b.x < 0 || b.x > world.width)) bullets.splice(i, 1);
@@ -2098,6 +2167,7 @@
                 if (pistol.width > 0 && !pistol.pickedUp) ctx.drawImage(assets.images.pistol, pistol.x - camera.x, pistol.y - camera.y + pistol.floatY, pistol.width, pistol.height);
                 if (uzi.dropped && uzi.width > 0 && !uzi.pickedUp) ctx.drawImage(assets.images.uzi, uzi.x - camera.x, uzi.y - camera.y + uzi.floatY - 106 * GAME_CFG.WORLD_SCALE, uzi.width * 0.85, uzi.height * 0.85);
                 if (laserWep.dropped && laserWep.width > 0 && !laserWep.pickedUp) ctx.drawImage(assets.images.laser, laserWep.x - camera.x, laserWep.y - camera.y + laserWep.floatY - 97 * GAME_CFG.WORLD_SCALE, laserWep.width, laserWep.height);
+                if (revolver.dropped && revolver.width > 0 && !revolver.pickedUp) ctx.drawImage(assets.images.revolver, revolver.x - camera.x, revolver.y - camera.y + revolver.floatY - 90 * GAME_CFG.WORLD_SCALE, revolver.width * 0.9, revolver.height * 0.9);
 
                 ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
 
@@ -2124,12 +2194,15 @@
                     if (player.currentState === 'aiming') { 
                         activeImage = player.currentWeapon === 'uzi' ? assets.images.uziAim : 
                                       player.currentWeapon === 'laser' ? assets.images.laserAim :
+                                      player.currentWeapon === 'revolver' ? (assets.images.revolverAim || assets.images.aim) :
                                       assets.images.aim; 
                         cols = player.currentWeapon === 'uzi' ? player.uziAimCols : 
                                player.currentWeapon === 'laser' ? player.laserAimCols :
+                               player.currentWeapon === 'revolver' ? player.revolverAimCols :
                                player.aimCols; 
                         rows = player.currentWeapon === 'uzi' ? player.uziAimRows : 
                                player.currentWeapon === 'laser' ? player.laserAimRows :
+                               player.currentWeapon === 'revolver' ? player.revolverAimRows :
                                player.aimRows; 
                     } 
                     else if (player.currentState === 'jumping') { activeImage = assets.images.jumpImage; cols = player.jumpCols; rows = player.jumpRows; } 
@@ -2236,13 +2309,13 @@
                 ctx.save();
                 ctx.scale(renderScale, renderScale);
 
-                let hudWeapon = player.currentWeapon === 'uzi' ? uzi : player.currentWeapon === 'laser' ? laserWep : pistol;
+                let hudWeapon = player.currentWeapon === 'uzi' ? uzi : player.currentWeapon === 'laser' ? laserWep : player.currentWeapon === 'revolver' ? revolver : pistol;
                 if (hudWeapon.width > 0 && hudWeapon.pickedUp) {
                     const paddingRight = 30, paddingTop = 10; 
                     ctx.font = "bold 48px sans-serif"; // Scaled up font
                     const isUzi = player.currentWeapon === 'uzi';
                     const isLaser = player.currentWeapon === 'laser';
-                    const ammoText = isLaser ? (Math.floor(player.mana).toString().padStart(3, '0') + " / " + player.maxMana) : (hudWeapon.ammo.toString().padStart(2, '0') + " / " + hudWeapon.maxAmmo);
+                    const ammoText = isLaser ? (Math.floor(player.mana).toString().padStart(3, '0') + " / " + player.maxMana) : (hudWeapon.ammo.toString().padStart(2, '0') + " / " + hudWeapon.maxAmmo.toString().padStart(2, '0'));
                     const textWidth = ctx.measureText(ammoText).width;
                     const hudRH = isUzi ? pistol.height * 0.71 : pistol.height * 1.03, hudRW = hudRH * (hudWeapon.width / hudWeapon.height); // Scaled up weapons on HUD
                     const scrXWep = logicalViewW - hudRW - paddingRight - textWidth - 15, scrYWep = paddingTop - 15 + (isUzi ? (pistol.height * 0.2) / 2 : 0); 
@@ -2253,7 +2326,7 @@
                         ctx.shadowBlur = 20; 
                         ctx.shadowOffsetY = 10;
                     }
-                    const wImg = isUzi ? assets.images.uzi : isLaser ? assets.images.laser : assets.images.pistol;
+                    const wImg = isUzi ? assets.images.uzi : isLaser ? assets.images.laser : (player.currentWeapon === 'revolver' ? assets.images.revolver : assets.images.pistol);
                     ctx.drawImage(wImg, scrXWep, scrYWep, hudRW, hudRH); ctx.restore();
                     ctx.save(); ctx.fillStyle = "black"; 
                     if (!isMobile) {
@@ -2301,7 +2374,7 @@
                     ctx.save();
                     const scoreY = hudHpH;
                     ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-                    ctx.fillRect(25, scoreY + 10, 226, 201);
+                    ctx.fillRect(25, scoreY + 10, 246, 201);
 
                     const kw = assets.images.keyboardKey.width * 0.039, kh = assets.images.keyboardKey.height * 0.039;
                     ctx.drawImage(assets.images.keyboardKey, 51, scoreY + 1, kw, kh); // A
@@ -2317,6 +2390,7 @@
                     ctx.drawImage(assets.images.keyboardKey, 75, scoreY + 161, kw, kh); // 1
                     ctx.drawImage(assets.images.keyboardKey, 114, scoreY + 161, kw, kh); // 2
                     ctx.drawImage(assets.images.keyboardKey, 153, scoreY + 161, kw, kh); // 3
+                    ctx.drawImage(assets.images.keyboardKey, 192, scoreY + 161, kw, kh); // 4
                     
                     ctx.font = "bold 20px sans-serif"; // Scaled up font and spacing
                     ctx.fillStyle = "black"; 
@@ -2327,7 +2401,7 @@
                     ctx.fillText("Shoot:  K", 30, scoreY + 102);
                     ctx.fillText("Roll:  K  +  A  /  K  +  D", 30, scoreY + 134);
                     ctx.fillText("Melee:  K  +  S", 30, scoreY + 166);
-                    ctx.fillText("Weapon:  1  /  2  /  3", 30, scoreY + 198); 
+                    ctx.fillText("Weapon:  1  /  2  /  3  /  4", 30, scoreY + 198); 
                     ctx.restore();
                 }
 
