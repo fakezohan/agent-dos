@@ -402,7 +402,7 @@
             slowStack: 0
         };
 
-        const pistol = { x: 0, y: 0, width: 0, height: 0, pickedUp: false, floatY: 0, floatSpeed: 0.005, floatAmplitude: 0, sizeRatio: 0.60, ammo: 0, maxAmmo: 30 };
+        const pistol = { x: 0, y: 0, width: 0, height: 0, pickedUp: false, floatY: 0, floatSpeed: 0.005, floatAmplitude: 0, sizeRatio: 0.60, ammo: 0, maxAmmo: 15 };
         const uzi = { x: 0, y: 0, width: 0, height: 0, dropped: false, pickedUp: false, floatY: 0, floatSpeed: 0.005, floatAmplitude: 0, sizeRatio: 0.48, vx: 0, vy: 0, ammo: 0, maxAmmo: 50 };
         const laserWep = { x: 0, y: 0, width: 0, height: 0, dropped: false, pickedUp: false, floatY: 0, floatSpeed: 0.005, floatAmplitude: 0, sizeRatio: 0.60, vx: 0, vy: 0, ammo: 0, maxAmmo: 40 };
 
@@ -800,7 +800,14 @@
                     const pickupH = bulletHeight * 2.25;
 
                     let curWep = player.currentWeapon === 'uzi' ? uzi : player.currentWeapon === 'laser' ? laserWep : pistol;
-                    let ammoDropChance = Math.min(curWep.ammo < 15 ? 0.70 : 0.20, ammoPickups.length > 0 ? 0.40 : 1.0);
+                    let ammoDropChance;
+                    switch (true) {
+                        case (ammoPickups.length <= 1): ammoDropChance = 0.50; break;
+                        case (ammoPickups.length === 2): ammoDropChance = 0.40; break;
+                        case (ammoPickups.length === 3): ammoDropChance = 0.30; break;
+                        case (ammoPickups.length === 4): ammoDropChance = 0.20; break;
+                        default: ammoDropChance = 0;
+                    }
                     
                     if (Math.random() <= ammoDropChance) {
                         ammoPickups.push({ x: w.x + (w.width / 2) - (pickupW / 2), y: w.y + (w.height / 2) - (pickupH / 2), vx: (Math.random() - 0.5) * 16 * GAME_CFG.WORLD_SCALE, vy: (-8 - Math.random() * 6) * GAME_CFG.WORLD_SCALE, floatY: 0 });
@@ -808,10 +815,10 @@
 
                     let hpDropChance;
                     switch (true) {
-                        case (player.hp <= 1): hpDropChance = 0.50; break;
-                        case (player.hp === 2): hpDropChance = 0.40; break;
-                        case (player.hp === 3): hpDropChance = 0.30; break;
-                        case (player.hp === 4): hpDropChance = 0.20; break;
+                        case (player.hp + healthPickups.length <= 1): hpDropChance = 0.50; break;
+                        case (player.hp + healthPickups.length === 2): hpDropChance = 0.40; break;
+                        case (player.hp + healthPickups.length === 3): hpDropChance = 0.30; break;
+                        case (player.hp + healthPickups.length === 4): hpDropChance = 0.20; break;
                         default: hpDropChance = 0;
                     }
                     
@@ -1320,11 +1327,13 @@
 
                 const aHitX = a.x + 30 * GAME_CFG.WORLD_SCALE, aHitY = a.y + a.floatY;
                 if (player.x < aHitX + pickupW - 60 * GAME_CFG.WORLD_SCALE && pRightEdge > aHitX && player.y < aHitY + pickupH && player.y + player.height > aHitY) {
-                    if (pistol.pickedUp) pistol.ammo = Math.min(pistol.maxAmmo, pistol.ammo + 15);
-                    if (uzi.pickedUp) uzi.ammo = Math.min(uzi.maxAmmo, uzi.ammo + 15);
-                    if (laserWep.pickedUp) laserWep.ammo = Math.min(laserWep.maxAmmo, laserWep.ammo + 15);
-                    ammoPickups.splice(i, 1);
-                    playSound('pickup');
+                    let missingAmmo = 0;
+                    if (pistol.pickedUp) { missingAmmo += (pistol.maxAmmo - pistol.ammo); pistol.ammo = pistol.maxAmmo; }
+                    if (uzi.pickedUp) { missingAmmo += (uzi.maxAmmo - uzi.ammo); uzi.ammo = uzi.maxAmmo; }
+                    if (missingAmmo > 0) {
+                        ammoPickups.splice(i, 1);
+                        playSound('pickup');
+                    }
                 }
             }
 
