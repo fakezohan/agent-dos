@@ -1096,7 +1096,7 @@
                     bullets.push({
                         x: player.facingLeft ? player.x - bulletWidth + 25 * GAME_CFG.WORLD_SCALE: pRightEdge - 25 * GAME_CFG.WORLD_SCALE,
                         y: pyCenter - (bulletHeight / 2) - 43 * GAME_CFG.WORLD_SCALE,
-                        vx: player.facingLeft ? -80 * GAME_CFG.WORLD_SCALE : 80 * GAME_CFG.WORLD_SCALE, 
+                        vx: player.facingLeft ? -60 * GAME_CFG.WORLD_SCALE : 60 * GAME_CFG.WORLD_SCALE, 
                         vy: (Math.random() - 0.5) * (player.currentWeapon === 'uzi' ? 24 * GAME_CFG.WORLD_SCALE : 12 * GAME_CFG.WORLD_SCALE),
                         damage: player.currentWeapon === 'revolver' ? 60 : (player.currentWeapon === 'uzi' ? 7 : 10),
                         weaponType: player.currentWeapon,
