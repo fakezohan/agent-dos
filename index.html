@@ -2315,9 +2315,10 @@
                     ctx.font = "bold 48px sans-serif"; // Scaled up font
                     const isUzi = player.currentWeapon === 'uzi';
                     const isLaser = player.currentWeapon === 'laser';
+                    const isRevolver = player.currentWeapon === 'revolver';
                     const ammoText = isLaser ? (Math.floor(player.mana).toString().padStart(3, '0') + " / " + player.maxMana) : (hudWeapon.ammo.toString().padStart(2, '0') + " / " + hudWeapon.maxAmmo.toString().padStart(2, '0'));
                     const textWidth = ctx.measureText(ammoText).width;
-                    const hudRH = isUzi ? pistol.height * 0.71 : pistol.height * 1.03, hudRW = hudRH * (hudWeapon.width / hudWeapon.height); // Scaled up weapons on HUD
+                    const hudRH = isUzi ? pistol.height * 0.71 : isRevolver ? pistol.height * 0.9 : pistol.height * 1.03, hudRW = hudRH * (hudWeapon.width / hudWeapon.height); // Scaled up weapons on HUD
                     const scrXWep = logicalViewW - hudRW - paddingRight - textWidth - 15, scrYWep = paddingTop - 15 + (isUzi ? (pistol.height * 0.2) / 2 : 0); 
                     
                     ctx.save(); 
