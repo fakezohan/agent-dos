@@ -717,7 +717,7 @@
 
             if (type === 'downBoy') {
                 newEnemy.dbPhase = 0;
-                newEnemy.associatedCar = null;
+                newEnemy. associatedCar = null;
             } else if (type === 'toyCar') {
                 newEnemy.owner = owner;
                 newEnemy.distanceTraveled = 0;
@@ -991,13 +991,13 @@
                 player.isMeleeing = true;
                 player.isShooting = false;
             }
-            else if (intentShoot && !player.isShooting && !player.isRolling && player.isGrounded && activeWeapon.pickedUp && (player.currentWeapon === 'laser' ? player.mana >= 7 : activeWeapon.ammo > 0)) {
+            else if (intentShoot && !player.isShooting && !player.isRolling && player.isGrounded && activeWeapon.pickedUp && (player.currentWeapon === 'laser' ? player.mana >= 6 : activeWeapon.ammo > 0)) {
                 player.isShooting = true;
-                player.shootTimer = player.currentWeapon === 'uzi' ? 100 : player.currentWeapon === 'laser' ? 133 : 200; 
+                player.shootTimer = player.currentWeapon === 'uzi' ? 100 : player.currentWeapon === 'laser' ? 150 : 200; 
                 if (player.slowStack > 0) player.shootTimer = Math.floor(player.shootTimer / slowMult);
                 
                 if (player.currentWeapon === 'laser') {
-                    player.mana -= 7;
+                    player.mana -= 6;
                 } else {
                     activeWeapon.ammo -= 1;
                 }
@@ -1043,9 +1043,9 @@
                     let screenEnd = dir === 1 ? Math.min(world.width, camera.x + logicalViewW) : Math.max(0, camera.x);
                     let endX = screenEnd;
 
-                    for (let i = 0; i < hits.length && hitCount < 3; i++) {
+                    for (let i = 0; i < hits.length && hitCount < 5; i++) {
                         let w = hits[i].enemy;
-                        applyEnemyDamage(w, 4);
+                        applyEnemyDamage(w, 3);
                         w.vx = dir * 1.5 * GAME_CFG.WORLD_SCALE; w.vy = -2 * GAME_CFG.WORLD_SCALE;
                         
                         if (w.hp <= 0) handleEnemyDeath(w);
@@ -1054,7 +1054,7 @@
                             if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
                         }
                         hitCount++;
-                        if (hitCount === 3) {
+                        if (hitCount === 5) {
                             endX = dir === 1 ? w.x + w.width / 2 : w.x + w.width / 2;
                         }
                     }
@@ -1074,13 +1074,13 @@
                 }
 
                 // Check if the weapon just emptied and swap to the next available one
-                let justEmptied = (player.currentWeapon === 'laser') ? (player.mana < 7) : (activeWeapon.ammo <= 0);
+                let justEmptied = (player.currentWeapon === 'laser') ? (player.mana < 6) : (activeWeapon.ammo <= 0);
                 if (justEmptied) {
                     if (player.currentWeapon !== 'pistol' && pistol.pickedUp && pistol.ammo > 0) {
                         player.currentWeapon = 'pistol';
                     } else if (player.currentWeapon !== 'uzi' && uzi.pickedUp && uzi.ammo > 0) {
                         player.currentWeapon = 'uzi';
-                    } else if (player.currentWeapon !== 'laser' && laserWep.pickedUp && player.mana >= 7) {
+                    } else if (player.currentWeapon !== 'laser' && laserWep.pickedUp && player.mana >= 6) {
                         player.currentWeapon = 'laser';
                     }
                 }
