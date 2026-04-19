@@ -795,7 +795,7 @@
                 playSound(w.type + 'Death');
 
                 // Weapon Unlocks
-                if (enemiesKilled >= 1 && !revolver.dropped) {
+                if (enemiesKilled >= 45 && !revolver.dropped) {
                     revolver.dropped = true; updateWeaponSizes();
                     revolver.x = w.x + (w.width / 2) - (revolver.width / 2);
                     revolver.y = w.y + (w.height / 2) - (revolver.height / 2);
