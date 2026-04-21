@@ -272,7 +272,15 @@
             chefIdle: 'resources/enemies/chef/chef_sprite_sheet.webp',
             chefRun: 'resources/enemies/chef/chef_running_sprite_sheet.webp',
             shrimp: 'resources/enemies/chef/chef_projectile_shrimp.webp',
-            knife: 'resources/enemies/chef/chef_projectile_knife.webp'
+            knife: 'resources/enemies/chef/chef_projectile_knife.webp',
+            womanEvent: 'resources/enemies/woman/woman_event_icon.webp',
+            priestEvent: 'resources/enemies/priest/priest_event_icon.webp',
+            monkEvent: 'resources/enemies/monk/monk_event_icon.webp',
+            bearEvent: 'resources/enemies/bear/bear_event_icon.webp',
+            kfcEvent: 'resources/enemies/kfc/kfc_event_icon.webp',
+            armoredWomanEvent: 'resources/enemies/armored_woman/armored_woman_event_icon.webp',
+            chefEvent: 'resources/enemies/chef/chef_event_icon.webp',
+            downBoyEvent: 'resources/enemies/down_boy/down_boy_event_icon.webp'
         };
         const audioSources = {
             bgMusic: 'resources/sounds/background_music.mp3',
@@ -428,6 +436,17 @@
 
         let bullets = [], activeLasers = [], ammoPickups = [], healthPickups = [], throwingStars = [], crosses = [], enemies = [], rainbowHearts = [];
         let chefShrimps = [], chefKnives = [];
+        const gameEvents = [
+            { kills: 0, type: 'woman', iconKey: 'womanEvent', triggered: false },
+            { kills: 2, type: 'priest', iconKey: 'priestEvent', triggered: false },
+            { kills: 6, type: 'monk', iconKey: 'monkEvent', triggered: false },
+            { kills: 12, type: 'bear', iconKey: 'bearEvent', triggered: false },
+            { kills: 20, type: 'kfc', iconKey: 'kfcEvent', triggered: false },
+            { kills: 30, type: 'chef', iconKey: 'chefEvent', triggered: false },
+            { kills: 42, type: 'armoredWoman', iconKey: 'armoredWomanEvent', triggered: false },
+            { kills: 56, type: 'downBoy', iconKey: 'downBoyEvent', triggered: false }
+        ];
+
         let bulletWidth = 0, bulletHeight = 0, starWidth = 0, starHeight = 0, crossWidth = 0, crossHeight = 0;
         let shrimpWidth = 0, shrimpHeight = 0, knifeWidth = 0, knifeHeight = 0;
         let baseSizes = { woman: {w:0,h:0}, priest: {w:0,h:0}, monk: {w:0,h:0}, bear: {w:0,h:0}, kfc: {w:0,h:0}, armoredWoman: {w:0,h:0}, downBoy: {w:0,h:0}, toyCar: {w:0,h:0}, chef: {w:0,h:0}, chefRun: {w:0,h:0} };
@@ -834,14 +853,14 @@
                 }
 
                 // Weapon Unlocks
-                if (enemiesKilled >= 45 && !revolver.dropped) {
+                if (enemiesKilled >= 55 && !revolver.dropped) {
                     revolver.dropped = true; updateWeaponSizes();
                     revolver.x = w.x + (w.width / 2) - (revolver.width / 2);
                     revolver.y = w.y + (w.height / 2) - (revolver.height / 2);
                     revolver.vx = (Math.random() - 0.5) * 8 * GAME_CFG.WORLD_SCALE; revolver.vy = (-8 - Math.random() * 6) * GAME_CFG.WORLD_SCALE;
                 }
 
-                if (enemiesKilled >= 30 && !laserWep.dropped) {
+                if (enemiesKilled >= 35 && !laserWep.dropped) {
                     laserWep.dropped = true; updateWeaponSizes();
                     laserWep.x = w.x + (w.width / 2) - (laserWep.width / 2);
                     laserWep.y = w.y + (w.height / 2) - (laserWep.height / 2);
@@ -919,7 +938,9 @@
             enemyBonusHP = 1.0;
             enemyBonusArmor = 1.0;
             healthDropPenalty = 0.0;
+            
             bossSpawned = false;
+            for (let e of gameEvents) e.triggered = false;
 
             bullets = []; activeLasers = []; ammoPickups = []; healthPickups = []; throwingStars = []; crosses = []; rainbowHearts = []; enemies.length = 0; 
             chefShrimps = []; chefKnives = [];
@@ -1388,16 +1409,27 @@
             }
 
             if (world.width > 0 && pistol.pickedUp) {
-                if (pistolActiveTimeMs >= 60000 && !bossSpawned) {
-                    for (let i = 0; i < enemies.length; i++) {
-                        if (!enemies[i].isDead) {
-                            enemies[i].hp = 0;
-                            enemies[i].armor = 0;
-                            handleEnemyDeath(enemies[i]);
+                // Determine which events trigger based on kill count
+                for (let e of gameEvents) {
+                    if (enemiesKilled >= e.kills && !e.triggered) {
+                        e.triggered = true;
+                        
+                        if (e.type === 'chef') {
+                            if (!bossSpawned) {
+                                for (let i = 0; i < enemies.length; i++) {
+                                    if (!enemies[i].isDead) {
+                                        enemies[i].hp = 0;
+                                        enemies[i].armor = 0;
+                                        handleEnemyDeath(enemies[i]);
+                                    }
+                                }
+                                spawnEnemy('chef');
+                                bossSpawned = true;
+                            }
+                        } else {
+                            spawnEnemy(e.type);
                         }
                     }
-                    spawnEnemy('chef');
-                    bossSpawned = true;
                 }
 
                 if (pistolActiveTimeMs >= nextSpawnTargetMs) {
@@ -1410,13 +1442,11 @@
                     }
 
                     let unlockedPool = [];
-                    if (pistolActiveTimeMs >= 1000) unlockedPool.push('woman');
-                    if (pistolActiveTimeMs >= 9000) unlockedPool.push('priest');
-                    if (pistolActiveTimeMs >= 17000) unlockedPool.push('monk');
-                    if (pistolActiveTimeMs >= 25000) unlockedPool.push('bear');
-                    if (pistolActiveTimeMs >= 33000) unlockedPool.push('kfc');
-                    if (pistolActiveTimeMs >= 41000) unlockedPool.push('armoredWoman');
-                    if (pistolActiveTimeMs >= 49000) unlockedPool.push('downBoy');
+                    for (let e of gameEvents) {
+                        if (enemiesKilled >= e.kills && e.type !== 'chef') {
+                            unlockedPool.push(e.type);
+                        }
+                    }
 
                     if (unlockedPool.length > 0) {
                         if (!isChefAlive) {
@@ -2231,6 +2261,10 @@
                     ctx.restore();
                 }
 
+                if (!isMobile) {
+                    ctx.shadowColor = 'lime'; 
+                    ctx.shadowBlur = 15;
+                }
                 // Render Chef Knives
                 for (let k of chefKnives) {
                     if (k.timer >= k.delay) {
@@ -2238,10 +2272,6 @@
                     }
                 }
 
-                if (!isMobile) {
-                    ctx.shadowColor = 'lime'; 
-                    ctx.shadowBlur = 15;
-                }
                 for (let s of throwingStars) {
                     const sW = starWidth * s.scale, sH = starHeight * s.scale;
                     ctx.save();
@@ -2660,6 +2690,49 @@
                 
                 ctx.font = "bold 36px sans-serif"; 
                 ctx.fillText(timeText, logicalViewW / 2, 230 * GAME_CFG.WORLD_SCALE);
+
+                // --- EVENT PROGRESS BAR ---
+                const eventBarY = 320 * GAME_CFG.WORLD_SCALE;
+                const eventBarW = 550 * GAME_CFG.WORLD_SCALE;
+                const eventBarX = logicalViewW / 2 - eventBarW / 2;
+
+                ctx.beginPath();
+                ctx.moveTo(eventBarX, eventBarY);
+                ctx.lineTo(eventBarX + eventBarW, eventBarY);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'black';
+                ctx.stroke();
+
+                for (let e of gameEvents) {
+                    let diff = e.kills - enemiesKilled;
+                    if (diff >= -15 && diff <= 15) {
+                        let evX = logicalViewW / 2 + (diff / 15) * (eventBarW / 2);
+                        let img = assets.images[e.iconKey];
+                        if (img && img.width > 0) {
+                            if (e.type === 'chef') {
+                                const targetEvIconHeight = 90 * GAME_CFG.WORLD_SCALE;
+                                let ratio = img.width / img.height;
+                                let evDrawH = targetEvIconHeight;
+                                let evDrawW = evDrawH * ratio;
+                                ctx.drawImage(img, evX - evDrawW/2, eventBarY - evDrawH * 3 / 5, evDrawW, evDrawH);
+                            } else {
+                                const targetEvIconHeight = 60 * GAME_CFG.WORLD_SCALE;
+                                let ratio = img.width / img.height;
+                                let evDrawH = targetEvIconHeight;
+                                let evDrawW = evDrawH * ratio;
+                                ctx.drawImage(img, evX - evDrawW/2, eventBarY - evDrawH * 3 / 5, evDrawW, evDrawH);
+                            }
+                        }
+                    }
+                }
+
+                const centerHpImg = assets.images.health;
+                if (centerHpImg && centerHpImg.width > 0) {
+                    const centerHpW = centerHpImg.width * 0.04 * GAME_CFG.WORLD_SCALE;
+                    const centerHpH = centerHpImg.height * 0.04 * GAME_CFG.WORLD_SCALE;
+                    ctx.drawImage(centerHpImg, logicalViewW / 2 - centerHpW / 2, eventBarY - centerHpH / 2, centerHpW, centerHpH);
+                }
+                // --- END EVENT PROGRESS BAR ---
                 
                 ctx.restore();
 
