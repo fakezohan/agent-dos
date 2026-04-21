@@ -793,6 +793,18 @@
                 newEnemy.speed = 8 * GAME_CFG.WORLD_SCALE;
                 newEnemy.shrimpCount = 0;
                 newEnemy.healCount = 0;
+                newEnemy.damageTakenSinceLastAmmo = 0;
+                
+                // Chef drops ammo when he spawns
+                const pickupW = bulletWidth * 2.25;
+                const pickupH = bulletHeight * 2.25;
+                ammoPickups.push({ 
+                    x: spawnX + (scaledW / 2) - (pickupW / 2), 
+                    y: yPos + (scaledH / 2) - (pickupH / 2), 
+                    vx: (Math.random() - 0.5) * 16 * GAME_CFG.WORLD_SCALE, 
+                    vy: (-8 - Math.random() * 6) * GAME_CFG.WORLD_SCALE, 
+                    floatY: 0 
+                });
             }
 
             enemies.push(newEnemy);
@@ -812,6 +824,8 @@
                 return;
             }
 
+            let hpBefore = w.hp;
+
             if (w.armor !== undefined && w.armor > 0) {
                 if (isMelee) return; 
                 let effectiveDmg = Math.max(1, incomingDmg - 9); 
@@ -825,6 +839,25 @@
             } else {
                 w.hp -= incomingDmg;
             }
+
+            let hpLost = hpBefore - w.hp;
+            if (w.type === 'chef' && hpLost > 0) {
+                if (w.damageTakenSinceLastAmmo === undefined) w.damageTakenSinceLastAmmo = 0;
+                w.damageTakenSinceLastAmmo += hpLost;
+                while (w.damageTakenSinceLastAmmo >= 200) {
+                    w.damageTakenSinceLastAmmo -= 200;
+                    const pickupW = bulletWidth * 2.25;
+                    const pickupH = bulletHeight * 2.25;
+                    ammoPickups.push({ 
+                        x: w.x + (w.width / 2) - (pickupW / 2), 
+                        y: w.y + (w.height / 2) - (pickupH / 2), 
+                        vx: (Math.random() - 0.5) * 16 * GAME_CFG.WORLD_SCALE, 
+                        vy: (-8 - Math.random() * 6) * GAME_CFG.WORLD_SCALE, 
+                        floatY: 0 
+                    });
+                }
+            }
+
             currentScore += incomingDmg;
         }
 
@@ -2693,7 +2726,7 @@
 
                 // --- EVENT PROGRESS BAR ---
                 const eventBarY = 320 * GAME_CFG.WORLD_SCALE;
-                const eventBarW = 550 * GAME_CFG.WORLD_SCALE;
+                const eventBarW = 660 * GAME_CFG.WORLD_SCALE;
                 const eventBarX = logicalViewW / 2 - eventBarW / 2;
 
                 ctx.beginPath();
@@ -2710,13 +2743,13 @@
                         let img = assets.images[e.iconKey];
                         if (img && img.width > 0) {
                             if (e.type === 'chef') {
-                                const targetEvIconHeight = 90 * GAME_CFG.WORLD_SCALE;
+                                const targetEvIconHeight = 108 * GAME_CFG.WORLD_SCALE;
                                 let ratio = img.width / img.height;
                                 let evDrawH = targetEvIconHeight;
                                 let evDrawW = evDrawH * ratio;
                                 ctx.drawImage(img, evX - evDrawW/2, eventBarY - evDrawH * 3 / 5, evDrawW, evDrawH);
                             } else {
-                                const targetEvIconHeight = 60 * GAME_CFG.WORLD_SCALE;
+                                const targetEvIconHeight = 72 * GAME_CFG.WORLD_SCALE;
                                 let ratio = img.width / img.height;
                                 let evDrawH = targetEvIconHeight;
                                 let evDrawW = evDrawH * ratio;
@@ -2728,8 +2761,8 @@
 
                 const centerHpImg = assets.images.health;
                 if (centerHpImg && centerHpImg.width > 0) {
-                    const centerHpW = centerHpImg.width * 0.04 * GAME_CFG.WORLD_SCALE;
-                    const centerHpH = centerHpImg.height * 0.04 * GAME_CFG.WORLD_SCALE;
+                    const centerHpW = centerHpImg.width * 0.048 * GAME_CFG.WORLD_SCALE;
+                    const centerHpH = centerHpImg.height * 0.048 * GAME_CFG.WORLD_SCALE;
                     ctx.drawImage(centerHpImg, logicalViewW / 2 - centerHpW / 2, eventBarY - centerHpH / 2, centerHpW, centerHpH);
                 }
                 // --- END EVENT PROGRESS BAR ---
