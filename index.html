@@ -2245,17 +2245,6 @@
         function render() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // --- GPU Texture Keep-Alive Hack ---
-            if (isMobile) {
-                ctx.save();
-                ctx.globalAlpha = 0.01; // Practically invisible
-                // Draw a tiny 1x1 pixel of your sprite sheets off-screen
-                ctx.drawImage(assets.images.walk, 0, 0, 1, 1, -10, -10, 1, 1);
-                ctx.drawImage(assets.images.melee, 0, 0, 1, 1, -10, -10, 1, 1);
-                ctx.drawImage(assets.images.idle, 0, 0, 1, 1, -10, -10, 1, 1);
-                ctx.restore();
-            }
-
             ctx.textAlign = "left"; 
 
             let logicalViewW = canvas.width / (renderScale || 1);
@@ -2409,18 +2398,14 @@
                                     ctx.filter = 'brightness(100%) sepia(100%) hue-rotate(315deg) saturate(800%) drop-shadow(0px 0px 3px rgba(255,0,0,0.4))';
                                 }
                             } else {
-                                if (isWhite || isFlash) {
-                                    ctx.globalCompositeOperation = 'lighter';
-                                    ctx.globalAlpha = isWhite ? 0.9 : 0.6;
-                                }
+                                ctx.globalAlpha = isWhite ? 0.6 : 0.4;
                             }
                         }
                     } else if (w.isBlinking) {
                         if (!isMobile) {
                             ctx.filter = 'brightness(1000%) grayscale(100%)'; 
                         } else {
-                            ctx.globalCompositeOperation = 'lighter';
-                            ctx.globalAlpha = 0.7;
+                            ctx.globalAlpha = 0.4;
                         }
                     }
 
@@ -2566,8 +2551,7 @@
                         if (!isMobile) {
                             ctx.filter = 'brightness(1000%) grayscale(100%)';
                         } else {
-                            ctx.globalCompositeOperation = 'lighter';
-                            ctx.globalAlpha = 0.7;
+                            ctx.globalAlpha = 0.4;
                         }
                     }
                     ctx.translate(player.x + (player.width / 2) - camera.x, player.y + player.height - (rSize / 2) - camera.y);
@@ -2616,8 +2600,7 @@
                         if (!isMobile) {
                             ctx.filter = 'brightness(1000%) grayscale(100%)'; 
                         } else {
-                            ctx.globalCompositeOperation = 'lighter';
-                            ctx.globalAlpha = 0.7;
+                            ctx.globalAlpha = 0.4;
                         }
                     }
                     
@@ -2909,7 +2892,7 @@
 
         function resizeCanvas() {
             // Implement mobile DPR cap
-            const maxDpr = isMobile ? Math.min(window.devicePixelRatio || 1, 1.5) : window.devicePixelRatio || 1;
+            const maxDpr = isMobile ? 1.0 : (window.devicePixelRatio || 1);
             
             canvas.width = window.innerWidth * maxDpr;
             canvas.height = window.innerHeight * maxDpr;
