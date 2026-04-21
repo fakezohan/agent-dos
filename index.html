@@ -177,7 +177,11 @@
             armoredWomanHurt: { volume: 0.7, rate: 2.0 },
             armoredWomanDeath: { volume: 0.7, rate: 1.0 },
             downBoyDeath: { volume: 0.7, rate: 1.0 },
-            toyCarDeath: { volume: 0.7, rate: 1.0 }
+            toyCarDeath: { volume: 0.7, rate: 1.0 },
+            shrimpThrown: { volume: 0.6, rate: 1.0 },
+            knifeFall: { volume: 0.8, rate: 1.0 },
+            cookieBite: { volume: 1.0, rate: 1.0 },
+            chefDeath: { volume: 1.0, rate: 1.0 }
         };
 
         // --- Shared Constants & Magic Numbers ---
@@ -222,6 +226,8 @@
         let enemyBonusArmor = 1.0; 
         let healthDropPenalty = 0.0;
 
+        let bossSpawned = false;
+
         const world = { width: 0, height: 0 };
         const camera = { x: 0, y: 0 };
 
@@ -262,7 +268,11 @@
             armoredWoman: 'resources/enemies/armored_woman/armored_woman_sprite_sheet.webp',
             snowParticle: 'resources/enemies/armored_woman/armored_woman_projectile.webp',
             downBoy: 'resources/enemies/down_boy/down_boy_sprite_sheet.webp',
-            toyCar: 'resources/enemies/down_boy/toy_car_sprite_sheet.webp'
+            toyCar: 'resources/enemies/down_boy/toy_car_sprite_sheet.webp',
+            chefIdle: 'resources/enemies/chef/chef_sprite_sheet.webp',
+            chefRun: 'resources/enemies/chef/chef_running_sprite_sheet.webp',
+            shrimp: 'resources/enemies/chef/chef_projectile_shrimp.webp',
+            knife: 'resources/enemies/chef/chef_projectile_knife.webp'
         };
         const audioSources = {
             bgMusic: 'resources/sounds/background_music.mp3',
@@ -284,7 +294,11 @@
             armoredWomanHurt: 'resources/sounds/armored_woman_hurt_sound_effect.mp3',
             armoredWomanDeath: 'resources/sounds/armor_woman_death_sound_effect.mp3',
             downBoyDeath: 'resources/sounds/down_boy_death_sound_effect.mp3',
-            toyCarDeath: 'resources/sounds/toy_car_death_sound_effect.mp3'
+            toyCarDeath: 'resources/sounds/toy_car_death_sound_effect.mp3',
+            shrimpThrown: 'resources/sounds/shrimp_thrown.mp3',
+            knifeFall: 'resources/sounds/knife_falling_sound_effect.mp3',
+            cookieBite: 'resources/sounds/cookie_crunch.mp3',
+            chefDeath: 'resources/sounds/chef_death_sound_effect.mp3'
         };
 
         let loadProgress = 0;
@@ -413,8 +427,10 @@
         const revolver = { x: 0, y: 0, width: 0, height: 0, dropped: false, pickedUp: false, floatY: 0, floatSpeed: 0.005, floatAmplitude: 0, sizeRatio: 0.60, vx: 0, vy: 0, ammo: 0, maxAmmo: 6 };
 
         let bullets = [], activeLasers = [], ammoPickups = [], healthPickups = [], throwingStars = [], crosses = [], enemies = [], rainbowHearts = [];
+        let chefShrimps = [], chefKnives = [];
         let bulletWidth = 0, bulletHeight = 0, starWidth = 0, starHeight = 0, crossWidth = 0, crossHeight = 0;
-        let baseSizes = { woman: {w:0,h:0}, priest: {w:0,h:0}, monk: {w:0,h:0}, bear: {w:0,h:0}, kfc: {w:0,h:0}, armoredWoman: {w:0,h:0}, downBoy: {w:0,h:0}, toyCar: {w:0,h:0} };
+        let shrimpWidth = 0, shrimpHeight = 0, knifeWidth = 0, knifeHeight = 0;
+        let baseSizes = { woman: {w:0,h:0}, priest: {w:0,h:0}, monk: {w:0,h:0}, bear: {w:0,h:0}, kfc: {w:0,h:0}, armoredWoman: {w:0,h:0}, downBoy: {w:0,h:0}, toyCar: {w:0,h:0}, chef: {w:0,h:0}, chefRun: {w:0,h:0} };
         
         let nextSpawnTargetMs;
         let currentSpawnIntervalMs;
@@ -616,6 +632,11 @@
             crossWidth = assets.images.cross.width * 0.169 * GAME_CFG.WORLD_SCALE;
             crossHeight = assets.images.cross.height * 0.169 * GAME_CFG.WORLD_SCALE;
 
+            shrimpWidth = assets.images.shrimp.width * 0.20 * GAME_CFG.WORLD_SCALE;
+            shrimpHeight = assets.images.shrimp.height * 0.20 * GAME_CFG.WORLD_SCALE;
+            knifeWidth = assets.images.knife.width * 0.25 * GAME_CFG.WORLD_SCALE;
+            knifeHeight = assets.images.knife.height * 0.25 * GAME_CFG.WORLD_SCALE;
+
             baseSizes.woman.w = (assets.images.womanIdle.width / 3) * GAME_CFG.ENEMY_SCALE * 2.13 * GAME_CFG.WORLD_SCALE;
             baseSizes.woman.h = assets.images.womanIdle.height * GAME_CFG.ENEMY_SCALE * 2.13 * GAME_CFG.WORLD_SCALE;
             baseSizes.priest.w = (assets.images.priestIdle.width / 3) * GAME_CFG.ENEMY_SCALE * 2.13 * GAME_CFG.WORLD_SCALE;
@@ -634,6 +655,11 @@
             baseSizes.downBoy.h = (assets.images.downBoy.height / 5) * GAME_CFG.ENEMY_SCALE * 2.47 * GAME_CFG.WORLD_SCALE;
             baseSizes.toyCar.w = (assets.images.toyCar.width / 2) * GAME_CFG.ENEMY_SCALE * 3 * GAME_CFG.WORLD_SCALE;
             baseSizes.toyCar.h = (assets.images.toyCar.height / 3) * GAME_CFG.ENEMY_SCALE * 3 * GAME_CFG.WORLD_SCALE;
+
+            baseSizes.chef.w = (assets.images.chefIdle.width / 2) * GAME_CFG.ENEMY_SCALE * 3 * GAME_CFG.WORLD_SCALE;
+            baseSizes.chef.h = (assets.images.chefIdle.height / 4) * GAME_CFG.ENEMY_SCALE * 3 * GAME_CFG.WORLD_SCALE;
+            baseSizes.chefRun.w = (assets.images.chefRun.width / 2) * GAME_CFG.ENEMY_SCALE * 3 * GAME_CFG.WORLD_SCALE;
+            baseSizes.chefRun.h = (assets.images.chefRun.height / 11) * GAME_CFG.ENEMY_SCALE * 3 * GAME_CFG.WORLD_SCALE;
 
             world.width = assets.images.background.width * GAME_CFG.WORLD_SCALE;
             world.height = assets.images.background.height * GAME_CFG.WORLD_SCALE;
@@ -672,7 +698,7 @@
         }
 
         function spawnEnemy(type, startX, owner) {
-            const base = baseSizes[type];
+            const base = type === 'chef' ? baseSizes.chef : baseSizes[type];
             let scaledW = (base.w || 100) * enemySizeMultiplier;
             let scaledH = base.h * enemySizeMultiplier;
             
@@ -706,7 +732,9 @@
             else if (type === 'downBoy') baseHp = 65;
             else if (type === 'toyCar') baseHp = 1;
 
-            const finalHp = Math.floor(baseHp * enemyBonusHP);
+            let finalHp = Math.floor(baseHp * enemyBonusHP);
+            if (type === 'chef') finalHp = 650;
+
             const currentLevel = 1 + difficultyIntervals;
             const armor = type === 'armoredWoman' ? Math.floor(5 * enemyBonusArmor) : (type === 'toyCar' ? 2 : 0);
             
@@ -720,6 +748,7 @@
             else if(type === 'armoredWoman') { frameDurs = [1000, 300, 800, 1500]; r = 5; c = 1; tFrames = 4; }
             else if(type === 'downBoy') { frameDurs = [1000, 300, 1000, 1000, 300]; r = 5; c = 1; tFrames = 5; }
             else if(type === 'toyCar') { frameDurs = [30, 30, 30, 30, 30, 30]; r = 3; c = 2; tFrames = 6; }
+            else if(type === 'chef') { c = 2; r = 4; tFrames = 8; }
 
             let newEnemy = {
                 type, x: spawnX, y: yPos, vx: 0, vy: 0, width: scaledW, height: scaledH, hp: type === 'toyCar' ? 1 : finalHp, maxHp: finalHp, level: currentLevel, isDead: false,
@@ -739,6 +768,12 @@
                     newEnemy.facingLeft = owner.facingLeft;
                     owner.associatedCar = newEnemy;
                 }
+            } else if (type === 'chef') {
+                newEnemy.chefPhase = 0; 
+                newEnemy.subPhase = 0; 
+                newEnemy.speed = 8 * GAME_CFG.WORLD_SCALE;
+                newEnemy.shrimpCount = 0;
+                newEnemy.healCount = 0;
             }
 
             enemies.push(newEnemy);
@@ -792,7 +827,11 @@
 
             if (isInsideWorld) {
                 // Play sound only if within dimensions
-                playSound(w.type + 'Death');
+                if (w.type === 'chef') {
+                    playSound('chefDeath');
+                } else {
+                    playSound(w.type + 'Death');
+                }
 
                 // Weapon Unlocks
                 if (enemiesKilled >= 45 && !revolver.dropped) {
@@ -880,8 +919,10 @@
             enemyBonusHP = 1.0;
             enemyBonusArmor = 1.0;
             healthDropPenalty = 0.0;
+            bossSpawned = false;
 
             bullets = []; activeLasers = []; ammoPickups = []; healthPickups = []; throwingStars = []; crosses = []; rainbowHearts = []; enemies.length = 0; 
+            chefShrimps = []; chefKnives = [];
 
             nextSpawnTargetMs = 3000;
             currentSpawnIntervalMs = 2500;
@@ -1050,6 +1091,7 @@
                         if (w.type === 'monk') { hOffX = hOffX * 1.3 - 30 * GAME_CFG.WORLD_SCALE; hOffY = hOffY * 1.3 + 50 * GAME_CFG.WORLD_SCALE; hRedW = hRedW * 1.3 - 60 * GAME_CFG.WORLD_SCALE; hRedH = hRedH * 1.3 + 100 * GAME_CFG.WORLD_SCALE; }
                         else if (w.type === 'bear') { hOffX = 20 * GAME_CFG.WORLD_SCALE; hOffY = 20 * GAME_CFG.WORLD_SCALE; hRedW = 40 * GAME_CFG.WORLD_SCALE; hRedH = 40 * GAME_CFG.WORLD_SCALE; }
                         else if (w.type === 'toyCar') { hOffX = 5 * GAME_CFG.WORLD_SCALE; hOffY = 5 * GAME_CFG.WORLD_SCALE; hRedW = 10 * GAME_CFG.WORLD_SCALE; hRedH = 10 * GAME_CFG.WORLD_SCALE; }
+                        else if (w.type === 'chef') { hOffX = 30 * GAME_CFG.WORLD_SCALE; hOffY = 30 * GAME_CFG.WORLD_SCALE; hRedW = 60 * GAME_CFG.WORLD_SCALE; hRedH = 60 * GAME_CFG.WORLD_SCALE; }
                         const scaleRatio = w.height / baseSizes[w.type].h;
                         hOffX *= scaleRatio; hOffY *= scaleRatio; hRedW *= scaleRatio; hRedH *= scaleRatio;
                         const wHitX = w.x + hOffX, wHitY = w.y + hOffY, wHitW = w.width - hRedW, wHitH = w.height - hRedH;
@@ -1077,11 +1119,16 @@
                     for (let i = 0; i < hits.length && hitCount < 5; i++) {
                         let w = hits[i].enemy;
                         applyEnemyDamage(w, 3);
-                        w.vx = dir * 1.5 * GAME_CFG.WORLD_SCALE; w.vy = -2 * GAME_CFG.WORLD_SCALE;
+                        if (w.type !== 'chef') {
+                            w.vx = dir * 1.5 * GAME_CFG.WORLD_SCALE; w.vy = -2 * GAME_CFG.WORLD_SCALE;
+                        }
                         
                         if (w.hp <= 0) handleEnemyDeath(w);
                         else {
-                            if (!w.isTicking) { w.currentState = 'hurt'; w.hurtTimer = 150; w.isBlinking = true; w.blinkTimer = 80; }
+                            if (w.type !== 'chef') {
+                                if (!w.isTicking) { w.currentState = 'hurt'; w.hurtTimer = 150; }
+                            }
+                            w.isBlinking = true; w.blinkTimer = 80;
                             if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
                         }
                         hitCount++;
@@ -1307,6 +1354,7 @@
                              if (w.type === 'monk') { hOffX = hOffX * 1.3 - 30 * GAME_CFG.WORLD_SCALE; hOffY = hOffY * 1.3 + 50 * GAME_CFG.WORLD_SCALE; hRedW = hRedW * 1.3 - 60 * GAME_CFG.WORLD_SCALE; hRedH = hRedH * 1.3 + 100 * GAME_CFG.WORLD_SCALE; }
                              else if (w.type === 'bear') { hOffX = 20 * GAME_CFG.WORLD_SCALE; hOffY = 20 * GAME_CFG.WORLD_SCALE; hRedW = 40 * GAME_CFG.WORLD_SCALE; hRedH = 40 * GAME_CFG.WORLD_SCALE; }
                              else if (w.type === 'toyCar') { hOffX = 5 * GAME_CFG.WORLD_SCALE; hOffY = 5 * GAME_CFG.WORLD_SCALE; hRedW = 10 * GAME_CFG.WORLD_SCALE; hRedH = 10 * GAME_CFG.WORLD_SCALE; }
+                             else if (w.type === 'chef') { hOffX = 30 * GAME_CFG.WORLD_SCALE; hOffY = 30 * GAME_CFG.WORLD_SCALE; hRedW = 60 * GAME_CFG.WORLD_SCALE; hRedH = 60 * GAME_CFG.WORLD_SCALE; }
                              const scaleRatio = w.height / baseSizes[w.type].h;
                              hOffX *= scaleRatio; hOffY *= scaleRatio; hRedW *= scaleRatio; hRedH *= scaleRatio;
 
@@ -1318,14 +1366,19 @@
                                   playSound('meleeHit');
 
                                   applyEnemyDamage(w, 10, true);
-                                  w.vx = player.facingLeft ? -1.5 * GAME_CFG.WORLD_SCALE : 1.5 * GAME_CFG.WORLD_SCALE;
-                                  w.vy = -3 * GAME_CFG.WORLD_SCALE;
+                                  if (w.type !== 'chef') {
+                                      w.vx = player.facingLeft ? -1.5 * GAME_CFG.WORLD_SCALE : 1.5 * GAME_CFG.WORLD_SCALE;
+                                      w.vy = -3 * GAME_CFG.WORLD_SCALE;
+                                  }
                                   
                                   if (w.hp <= 0) handleEnemyDeath(w);
                                   else {
-                                      if (!w.isTicking) {
-                                          w.currentState = 'hurt'; w.hurtTimer = 200; w.isBlinking = true; w.blinkTimer = 80;
+                                      if (w.type !== 'chef') {
+                                          if (!w.isTicking) {
+                                              w.currentState = 'hurt'; w.hurtTimer = 200; 
+                                          }
                                       }
+                                      w.isBlinking = true; w.blinkTimer = 80;
                                       if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
                                   }
                              }
@@ -1335,27 +1388,50 @@
             }
 
             if (world.width > 0 && pistol.pickedUp) {
+                if (pistolActiveTimeMs >= 60000 && !bossSpawned) {
+                    for (let i = 0; i < enemies.length; i++) {
+                        if (!enemies[i].isDead) {
+                            enemies[i].hp = 0;
+                            enemies[i].armor = 0;
+                            handleEnemyDeath(enemies[i]);
+                        }
+                    }
+                    spawnEnemy('chef');
+                    bossSpawned = true;
+                }
+
                 if (pistolActiveTimeMs >= nextSpawnTargetMs) {
+                    let isChefAlive = false;
+                    for (let i = 0; i < enemies.length; i++) {
+                        if (enemies[i].type === 'chef' && !enemies[i].isDead) {
+                            isChefAlive = true;
+                            break;
+                        }
+                    }
+
                     let unlockedPool = [];
                     if (pistolActiveTimeMs >= 1000) unlockedPool.push('woman');
-                    if (pistolActiveTimeMs >= 6000) unlockedPool.push('priest');
-                    if (pistolActiveTimeMs >= 11000) unlockedPool.push('monk');
-                    if (pistolActiveTimeMs >= 16000) unlockedPool.push('bear');
-                    if (pistolActiveTimeMs >= 21000) unlockedPool.push('kfc');
-                    if (pistolActiveTimeMs >= 26000) unlockedPool.push('armoredWoman');
-                    if (pistolActiveTimeMs >= 31000) unlockedPool.push('downBoy');
+                    if (pistolActiveTimeMs >= 9000) unlockedPool.push('priest');
+                    if (pistolActiveTimeMs >= 17000) unlockedPool.push('monk');
+                    if (pistolActiveTimeMs >= 25000) unlockedPool.push('bear');
+                    if (pistolActiveTimeMs >= 33000) unlockedPool.push('kfc');
+                    if (pistolActiveTimeMs >= 41000) unlockedPool.push('armoredWoman');
+                    if (pistolActiveTimeMs >= 49000) unlockedPool.push('downBoy');
 
                     if (unlockedPool.length > 0) {
-                        let selectedEnemyType = unlockedPool[0]; // Fallback to 100% chance for the weakest enemy
-                        for (let i = unlockedPool.length - 1; i > 0; i--) {
-                            if (Math.random() <= 0.25) {
-                                selectedEnemyType = unlockedPool[i];
-                                break;
+                        if (!isChefAlive) {
+                            let selectedEnemyType = unlockedPool[0]; // Fallback to 100% chance for the weakest enemy
+                            for (let i = unlockedPool.length - 1; i > 0; i--) {
+                                if (Math.random() <= 0.25) {
+                                    selectedEnemyType = unlockedPool[i];
+                                    break;
+                                }
                             }
+                            
+                            spawnEnemy(selectedEnemyType);
                         }
-                        
-                        spawnEnemy(selectedEnemyType);
 
+                        // Always increment to prevent spawn backlog while chef is alive
                         nextSpawnTargetMs += currentSpawnIntervalMs;
                         currentSpawnIntervalMs = Math.max(500, currentSpawnIntervalMs - 10); 
                     }
@@ -1407,6 +1483,57 @@
                 }
             }
 
+            // --- Chef Shrimps Update ---
+            for (let i = chefShrimps.length - 1; i >= 0; i--) {
+                let s = chefShrimps[i];
+                s.vy += player.gravity * 0.8;
+                s.x += s.vx; s.y += s.vy;
+                s.rotation += s.vx > 0 ? 0.3 : -0.3;
+
+                if (s.y + shrimpHeight >= floorY) { chefShrimps.splice(i, 1); continue; }
+
+                if (s.x < pHitXCenter + pHitWCenter && s.x + shrimpWidth > pHitXCenter && s.y < pHitYCenter + pHitHCenter && s.y + shrimpHeight > pHitYCenter) {
+                    if (!player.isRolling && !player.isBlinking) {
+                        player.hp = Math.max(0, player.hp - 1);
+                        player.isBlinking = true; player.blinkTimer = 80;
+                        playSound('playerHurt');
+                    }
+                    chefShrimps.splice(i, 1);
+                }
+            }
+
+            // --- Chef Knives Update ---
+            for (let i = chefKnives.length - 1; i >= 0; i--) {
+                let k = chefKnives[i];
+                k.timer += GAME_CFG.TIME_STEP;
+                if (k.timer >= k.delay && k.state === 'falling') {
+                    if (k.vy === 0) playSound('knifeFall'); 
+                    k.vy += player.gravity * 1.5; 
+                    k.y += k.vy;
+                    if (k.y + knifeHeight >= floorY) {
+                        k.y = floorY - knifeHeight;
+                        k.state = 'grounded';
+                        k.groundTimer = 0;
+                    }
+
+                    if (k.x < pHitXCenter + pHitWCenter && k.x + knifeWidth > pHitXCenter && k.y < pHitYCenter + pHitHCenter && k.y + knifeHeight > pHitYCenter) {
+                        if (!player.isRolling && !player.isBlinking) {
+                            player.hp = Math.max(0, player.hp - 1);
+                            player.isBlinking = true; player.blinkTimer = 80;
+                            playSound('playerHurt');
+                            chefKnives.splice(i, 1);
+                            continue;
+                        }
+                    }
+                } else if (k.state === 'grounded') {
+                    k.groundTimer += GAME_CFG.TIME_STEP;
+                    if (k.groundTimer >= 500) { 
+                        chefKnives.splice(i, 1);
+                    }
+                }
+            }
+
+
             for (let j = enemies.length - 1; j >= 0; j--) {
                 let w = enemies[j];
                 const wCenter = w.x + w.width / 2;
@@ -1431,6 +1558,7 @@
                       case 'armoredWoman': baseVOff = 32 * GAME_CFG.WORLD_SCALE; break;
                       case 'downBoy': baseVOff = 29 * GAME_CFG.WORLD_SCALE; break;
                       case 'toyCar': baseVOff = 5; break;
+                      case 'chef': baseVOff = 25 * GAME_CFG.WORLD_SCALE; break;
                       default: baseVOff = 7 * GAME_CFG.WORLD_SCALE;
                     }
                     const visualOffset = baseVOff * (w.height / baseSizes[w.type].h);
@@ -1441,8 +1569,130 @@
                         if (w.type !== 'bear' || w.currentState === 'idle' || w.currentState === 'attack') w.vx = 0; 
                     }
 
-                    if (w.type !== 'toyCar') {
+                    if (w.type !== 'toyCar' && w.type !== 'chef') {
                         w.facingLeft = pxCenter < wCenter;
+                    }
+
+                    if (w.type === 'chef') {
+                        w.frameTimer += GAME_CFG.TIME_STEP;
+
+                        if (w.chefPhase === 0) { // Shrimps
+                            if (w.subPhase === 0) {
+                                w.facingLeft = pxCenter < wCenter;
+                                w.currentFrame = 0;
+                                if (w.frameTimer >= 500) { w.frameTimer = 0; w.subPhase = 1; }
+                            } else if (w.subPhase === 1) {
+                                w.currentFrame = 1;
+                                if (w.frameTimer >= 200) { w.frameTimer = 0; w.subPhase = 2; }
+                            } else if (w.subPhase === 2) {
+                                w.currentFrame = 2;
+                                if (w.frameTimer - GAME_CFG.TIME_STEP <= 0) {
+                                    let distMult = w.shrimpCount === 0 ? 0.4 : (w.shrimpCount === 1 ? 0.7 : 1.1);
+                                    let sVx = w.facingLeft ? -35 * distMult : 35 * distMult;
+                                    sVx *= GAME_CFG.WORLD_SCALE;
+                                    let sVy = -27 * GAME_CFG.WORLD_SCALE;
+                                    chefShrimps.push({ x: w.facingLeft ? w.x : w.x + w.width, y: w.y + w.height / 2 - 20 * GAME_CFG.WORLD_SCALE, vx: sVx, vy: sVy, rotation: 0, scale: enemySizeMultiplier });
+                                    playSound('shrimpThrown');
+                                    w.shrimpCount++;
+                                }
+                                if (w.frameTimer >= 400) {
+                                    w.frameTimer = 0;
+                                    if (w.shrimpCount < 3) {
+                                        w.subPhase = 1; 
+                                    } else {
+                                        w.shrimpCount = 0;
+                                        w.chefPhase = 1; 
+                                        w.subPhase = 0;
+                                    }
+                                }
+                            }
+                        } else if (w.chefPhase === 1) { // Run
+                            const targetDist = 600 * GAME_CFG.WORLD_SCALE;
+                            const idealLeft = pxCenter - targetDist;
+                            const idealRight = pxCenter + targetDist;
+                            
+                            const validLeft = (idealLeft - w.width / 2) >= 0;
+                            const validRight = (idealRight + w.width / 2) <= world.width;
+                            
+                            let targetX;
+                            if (validLeft && validRight) {
+                                targetX = Math.abs(wCenter - idealLeft) < Math.abs(wCenter - idealRight) ? idealLeft : idealRight;
+                            } else if (validLeft) {
+                                targetX = idealLeft;
+                            } else if (validRight) {
+                                targetX = idealRight;
+                            } else {
+                                targetX = Math.abs(wCenter - idealLeft) < Math.abs(wCenter - idealRight) ? idealLeft : idealRight;
+                            }
+                            
+                            // Clamp to prevent the chef from trying to walk outside bounds to reach an invalid target
+                            targetX = Math.max(w.width / 2, Math.min(targetX, world.width - w.width / 2));
+                            const distToTarget = targetX - wCenter;
+
+                            w.currentFrame = (Math.floor(w.frameTimer / 50) % 22);
+
+                            if (Math.abs(distToTarget) > 10 * GAME_CFG.WORLD_SCALE) {
+                                w.vx = (distToTarget > 0) ? w.speed : -w.speed;
+                                w.facingLeft = w.vx < 0;
+                            } else {
+                                w.vx = 0;
+                                w.chefPhase = 2; 
+                                w.subPhase = 0;
+                                w.frameTimer = 0;
+                                w.currentFrame = 3; 
+                            }
+                        } else if (w.chefPhase === 2) { // Knives
+                            w.vx = 0;
+                            w.currentFrame = 3;
+                            if (w.subPhase === 0) {
+                                w.facingLeft = pxCenter < wCenter;
+                                for (let i = 0; i < 5; i++) {
+                                    let offset = (300 + i * 150) * GAME_CFG.WORLD_SCALE;
+                                    let kX = w.facingLeft ? wCenter - offset : wCenter + offset;
+                                    let kY = -200 * GAME_CFG.WORLD_SCALE;
+                                    chefKnives.push({
+                                        x: kX, y: kY, vy: 0, state: 'falling', delay: i * 500, timer: 0
+                                    });
+                                }
+                                w.subPhase = 1;
+                            } else if (w.subPhase === 1) {
+                                if (w.frameTimer >= 2500) {
+                                    w.chefPhase = 3;
+                                    w.subPhase = 0;
+                                    w.frameTimer = 0;
+                                }
+                            }
+                        } else if (w.chefPhase === 3) { // Heal
+                            w.vx = 0;
+                            w.facingLeft = pxCenter < wCenter;
+                            if (w.subPhase === 0) { 
+                                w.currentFrame = 4;
+                                if (w.frameTimer >= 200) { w.frameTimer = 0; w.subPhase = 1; }
+                            } else if (w.subPhase === 1) {
+                                w.currentFrame = 5;
+                                if (w.frameTimer >= 200) { w.frameTimer = 0; w.subPhase = 2; }
+                            } else if (w.subPhase === 2) { 
+                                w.currentFrame = 6;
+                                if (w.frameTimer - GAME_CFG.TIME_STEP <= 0) {
+                                    w.hp = Math.min(w.maxHp, w.hp + (w.maxHp * 0.02));
+                                    playSound('cookieBite');
+                                }
+                                if (w.frameTimer >= 200) { w.frameTimer = 0; w.subPhase = 3; }
+                            } else if (w.subPhase === 3) { 
+                                w.currentFrame = 7;
+                                if (w.frameTimer >= 200) {
+                                    w.frameTimer = 0;
+                                    w.healCount++;
+                                    if (w.healCount < 3) {
+                                        w.subPhase = 2; 
+                                    } else {
+                                        w.healCount = 0;
+                                        w.chefPhase = 0; 
+                                        w.subPhase = 0;
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     if (w.type === 'armoredWoman' && w.currentState !== 'hurt') w.vx = 0;
@@ -1592,7 +1842,7 @@
                                 w.currentFrame = 1;
                             }
                         }
-                    } else if (w.type !== 'downBoy' && w.type !== 'toyCar') {
+                    } else if (w.type !== 'downBoy' && w.type !== 'toyCar' && w.type !== 'chef') {
                         w.frameTimer += GAME_CFG.TIME_STEP;
                         
                         if (w.type === 'bear') {
@@ -1633,6 +1883,7 @@
                         if (w.type === 'monk') { hOffX = hOffX * 1.3 - 30 * GAME_CFG.WORLD_SCALE; hOffY = hOffY * 1.3 + 50 * GAME_CFG.WORLD_SCALE; hRedW = hRedW * 1.3 - 60 * GAME_CFG.WORLD_SCALE; hRedH = hRedH * 1.3 + 100 * GAME_CFG.WORLD_SCALE; }
                         else if (w.type === 'bear') { hOffX = 20 * GAME_CFG.WORLD_SCALE; hOffY = 20 * GAME_CFG.WORLD_SCALE; hRedW = 40 * GAME_CFG.WORLD_SCALE; hRedH = 40 * GAME_CFG.WORLD_SCALE; }
                         else if (w.type === 'toyCar') { hOffX = 5 * GAME_CFG.WORLD_SCALE; hOffY = 5 * GAME_CFG.WORLD_SCALE; hRedW = 10 * GAME_CFG.WORLD_SCALE; hRedH = 10 * GAME_CFG.WORLD_SCALE; }
+                        else if (w.type === 'chef') { hOffX = 30 * GAME_CFG.WORLD_SCALE; hOffY = 30 * GAME_CFG.WORLD_SCALE; hRedW = 60 * GAME_CFG.WORLD_SCALE; hRedH = 60 * GAME_CFG.WORLD_SCALE; }
 
                         const scaleRatio = w.height / baseSizes[w.type].h;
                         hOffX *= scaleRatio; hOffY *= scaleRatio; hRedW *= scaleRatio; hRedH *= scaleRatio;
@@ -1645,13 +1896,18 @@
                             if (!player.hitEnemiesThisRoll.includes(w)) {
                                 player.hitEnemiesThisRoll.push(w);
                                 applyEnemyDamage(w, 5, true);
-                                w.vx = (player.rollDirection > 0) ? 1.25 * GAME_CFG.WORLD_SCALE : -1.25 * GAME_CFG.WORLD_SCALE; w.vy = -8 * GAME_CFG.WORLD_SCALE; 
+                                if (w.type !== 'chef') {
+                                    w.vx = (player.rollDirection > 0) ? 1.25 * GAME_CFG.WORLD_SCALE : -1.25 * GAME_CFG.WORLD_SCALE; w.vy = -8 * GAME_CFG.WORLD_SCALE; 
+                                }
 
                                 if (w.hp <= 0) handleEnemyDeath(w);
                                 else {
-                                    if (!w.isTicking) {
-                                        w.currentState = 'hurt'; w.hurtTimer = 200; w.isBlinking = true; w.blinkTimer = 80;
+                                    if (w.type !== 'chef') {
+                                        if (!w.isTicking) {
+                                            w.currentState = 'hurt'; w.hurtTimer = 200; 
+                                        }
                                     }
+                                    w.isBlinking = true; w.blinkTimer = 80;
                                     if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
                                 }
                             }
@@ -1733,6 +1989,7 @@
                     if (w.type === 'monk') { hOffX = hOffX * 1.3 - 30 * GAME_CFG.WORLD_SCALE; hOffY = hOffY * 1.3 + 50 * GAME_CFG.WORLD_SCALE; hRedW = hRedW * 1.3 - 60 * GAME_CFG.WORLD_SCALE; hRedH = hRedH * 1.3 + 100 * GAME_CFG.WORLD_SCALE; }
                     else if (w.type === 'bear') { hOffX = 20 * GAME_CFG.WORLD_SCALE; hOffY = 20 * GAME_CFG.WORLD_SCALE; hRedW = 40 * GAME_CFG.WORLD_SCALE; hRedH = 40 * GAME_CFG.WORLD_SCALE; }
                     else if (w.type === 'toyCar') { hOffX = 5 * GAME_CFG.WORLD_SCALE; hOffY = 5 * GAME_CFG.WORLD_SCALE; hRedW = 10 * GAME_CFG.WORLD_SCALE; hRedH = 10 * GAME_CFG.WORLD_SCALE; }
+                    else if (w.type === 'chef') { hOffX = 30 * GAME_CFG.WORLD_SCALE; hOffY = 30 * GAME_CFG.WORLD_SCALE; hRedW = 60 * GAME_CFG.WORLD_SCALE; hRedH = 60 * GAME_CFG.WORLD_SCALE; }
 
                     const scaleRatio = w.height / baseSizes[w.type].h;
                     hOffX *= scaleRatio; hOffY *= scaleRatio; hRedW *= scaleRatio; hRedH *= scaleRatio;
@@ -1744,14 +2001,19 @@
                             if (!b.hitEnemies) b.hitEnemies = [];
                             if (b.hitEnemies.includes(w)) continue;
                             
-                            w.vx = (b.vx > 0) ? 0.625 * GAME_CFG.WORLD_SCALE : -0.625 * GAME_CFG.WORLD_SCALE; w.vy = -4 * GAME_CFG.WORLD_SCALE; 
+                            if (w.type !== 'chef') {
+                                w.vx = (b.vx > 0) ? 0.625 * GAME_CFG.WORLD_SCALE : -0.625 * GAME_CFG.WORLD_SCALE; w.vy = -4 * GAME_CFG.WORLD_SCALE; 
+                            }
                             applyEnemyDamage(w, b.damage);
 
                             if (w.hp <= 0) handleEnemyDeath(w);
                             else {
-                                if (!w.isTicking) {
-                                    w.currentState = 'hurt'; w.hurtTimer = 200; w.isBlinking = true; w.blinkTimer = 80;        
+                                if (w.type !== 'chef') {
+                                    if (!w.isTicking) {
+                                        w.currentState = 'hurt'; w.hurtTimer = 200; 
+                                    }
                                 }
+                                w.isBlinking = true; w.blinkTimer = 80;        
                                 if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
                             }
 
@@ -1762,15 +2024,20 @@
                                 bullets.splice(i, 1); hitRegistered = true; break; 
                             }
                         } else {
-                            w.vx = (b.vx > 0) ? 0.625 * GAME_CFG.WORLD_SCALE : -0.625 * GAME_CFG.WORLD_SCALE; w.vy = -4 * GAME_CFG.WORLD_SCALE; 
+                            if (w.type !== 'chef') {
+                                w.vx = (b.vx > 0) ? 0.625 * GAME_CFG.WORLD_SCALE : -0.625 * GAME_CFG.WORLD_SCALE; w.vy = -4 * GAME_CFG.WORLD_SCALE; 
+                            }
                             
                             applyEnemyDamage(w, b.damage);
 
                             if (w.hp <= 0) handleEnemyDeath(w);
                             else {
-                                if (!w.isTicking) {
-                                    w.currentState = 'hurt'; w.hurtTimer = 200; w.isBlinking = true; w.blinkTimer = 80;        
+                                if (w.type !== 'chef') {
+                                    if (!w.isTicking) {
+                                        w.currentState = 'hurt'; w.hurtTimer = 200; 
+                                    }
                                 }
+                                w.isBlinking = true; w.blinkTimer = 80;        
                                 if (w.armor > 0) { playSound('armoredWomanHurt'); } else { playSound('womanHurt'); }
                             }
                             bullets.splice(i, 1); hitRegistered = true; break; 
@@ -1964,6 +2231,13 @@
                     ctx.restore();
                 }
 
+                // Render Chef Knives
+                for (let k of chefKnives) {
+                    if (k.timer >= k.delay) {
+                        ctx.drawImage(assets.images.knife, k.x - camera.x, k.y - camera.y, knifeWidth, knifeHeight);
+                    }
+                }
+
                 if (!isMobile) {
                     ctx.shadowColor = 'lime'; 
                     ctx.shadowBlur = 15;
@@ -1980,6 +2254,15 @@
                     ctx.drawImage(assets.images.cross, c.x - camera.x, c.y - camera.y, cW, cH); 
                 }
                 
+                // Render Chef Shrimps
+                for (let s of chefShrimps) {
+                    const sW = shrimpWidth * s.scale, sH = shrimpHeight * s.scale;
+                    ctx.save();
+                    ctx.translate(s.x - camera.x + sW / 2, s.y - camera.y + sH / 2);
+                    ctx.rotate(s.rotation); ctx.drawImage(assets.images.shrimp, -sW / 2, -sH / 2, sW, sH);
+                    ctx.restore();
+                }
+
                 const heartBaseW = (assets.images.bearAttack.width / 3) * (GAME_CFG.ENEMY_SCALE * 2.218) * GAME_CFG.WORLD_SCALE;
                 const heartBaseH = assets.images.bearAttack.height * (GAME_CFG.ENEMY_SCALE * 2.218) * GAME_CFG.WORLD_SCALE;
                 for (let h of rainbowHearts) {
@@ -2003,7 +2286,7 @@
 
                 for (let w of enemies) {
                     if (w.width <= 0) continue; 
-                    let activeImg = w.type === 'woman' ? assets.images.womanIdle : w.type === 'priest' ? assets.images.priestIdle : w.type === 'monk' ? assets.images.monkIdle : w.type === 'kfc' ? assets.images.kfcRun : w.type === 'armoredWoman' ? assets.images.armoredWoman : w.type === 'downBoy' ? assets.images.downBoy : w.type === 'toyCar' ? assets.images.toyCar : (w.currentState === 'run' ? assets.images.bearRun : w.currentState === 'attack' ? assets.images.bearAttack : assets.images.bearIdle);
+                    let activeImg = w.type === 'woman' ? assets.images.womanIdle : w.type === 'priest' ? assets.images.priestIdle : w.type === 'monk' ? assets.images.monkIdle : w.type === 'kfc' ? assets.images.kfcRun : w.type === 'armoredWoman' ? assets.images.armoredWoman : w.type === 'downBoy' ? assets.images.downBoy : w.type === 'toyCar' ? assets.images.toyCar : w.type === 'chef' ? assets.images.chefIdle : (w.currentState === 'run' ? assets.images.bearRun : w.currentState === 'attack' ? assets.images.bearAttack : assets.images.bearIdle);
 
                     ctx.save();
                     
@@ -2067,6 +2350,7 @@
                         else if (w.type === 'armoredWoman') { imgToDraw = assets.images.armoredWoman; sWidth = imgToDraw.width; sHeight = imgToDraw.height / 5; sx = 0; sy = 4 * sHeight; }
                         else if (w.type === 'downBoy') { imgToDraw = assets.images.downBoy; sWidth = imgToDraw.width; sHeight = imgToDraw.height / 5; sx = 0; sy = 1 * sHeight; }
                         else if (w.type === 'toyCar') { imgToDraw = assets.images.toyCar; sWidth = imgToDraw.width / 2; sHeight = imgToDraw.height / 3; sx = 0; sy = 0; }
+                        else if (w.type === 'chef') { imgToDraw = assets.images.chefIdle; sWidth = assets.images.chefIdle.width / 2; sHeight = assets.images.chefIdle.height / 4; sx = (3 % 2) * sWidth; sy = Math.floor(3 / 2) * sHeight; }
                         else { const hurtImg = w.type === 'woman' ? assets.images.womanHurt : assets.images.priestHurt; imgToDraw = hurtImg; sWidth = hurtImg.width; sHeight = hurtImg.height; sx = 0; sy = 0; }
                     }
                     
@@ -2074,22 +2358,40 @@
                         if (w.type === 'bear' && w.currentState === 'idle') { imgToDraw = assets.images.bearIdle; sWidth = assets.images.bearIdle.width / 2; sHeight = assets.images.bearIdle.height; sx = w.currentFrame * sWidth; sy = 0; } 
                         else if (w.type === 'bear' && w.currentState === 'attack') { imgToDraw = assets.images.bearAttack; sWidth = assets.images.bearAttack.width / 3; sHeight = assets.images.bearAttack.height; sx = w.currentFrame * sWidth; sy = 0; } 
                         else if (w.type === 'armoredWoman') { imgToDraw = assets.images.armoredWoman; sWidth = imgToDraw.width; sHeight = imgToDraw.height / 5; sx = 0; sy = w.currentFrame * sHeight; }
+                        else if (w.type === 'chef' && w.chefPhase === 1) { imgToDraw = assets.images.chefRun; sWidth = assets.images.chefRun.width / 2; sHeight = assets.images.chefRun.height / 11; sx = (w.currentFrame % 2) * sWidth; sy = Math.floor(w.currentFrame / 2) * sHeight; }
                         else { imgToDraw = activeImg; sWidth = activeImg.width / w.cols; sHeight = activeImg.height / w.rows; sx = (w.currentFrame % w.cols) * sWidth; sy = Math.floor(w.currentFrame / w.cols) * sHeight; }
+                    }
+
+                    let drawW = w.width;
+                    let drawH = w.height;
+                    let offsetY = 0;
+
+                    if (w.type === 'chef') {
+                        // Dynamically calculate height to preserve aspect ratio
+                        drawH = drawW * (sHeight / sWidth);
+                        
+                        // The running sheet (1280px) has 161px padding; the others (1000px) have 28px padding.
+                        // We shift the running frame down by the difference (161 - 28 = 133) so the feet align.
+                        let extraPaddingPixels = (sHeight > 1100) ? (161 - 28) : 0;
+                        let extraPaddingRatio = extraPaddingPixels / sHeight;
+                        
+                        // Anchor to the bottom of the original hitbox, plus the shift for the extra padding
+                        offsetY = (w.height / 2) - (drawH / 2) + (drawH * extraPaddingRatio);
                     }
 
                     ctx.translate(w.x - camera.x + w.width / 2, w.y - camera.y + w.height / 2);
                     if (w.isDead) ctx.rotate(w.rotation); 
                     if (w.facingLeft) ctx.scale(-1, 1);
                     ctx.scale(drawScale, drawScale); 
-                    ctx.drawImage(imgToDraw, sx, sy, sWidth, sHeight, -w.width / 2, -w.height / 2, w.width, w.height);
+                    ctx.drawImage(imgToDraw, sx, sy, sWidth, sHeight, -drawW / 2, (-drawH / 2) + offsetY, drawW, drawH);
                     ctx.restore();
 
                     if (!w.isDead) {
                         ctx.save();
                         const startX = w.x - camera.x;
-                        const barW = 110; // Scaled up
+                        const barW = 110; 
                         const barX = startX + (w.width - barW) / 2;
-                        const barH = 18; // Scaled up
+                        const barH = 18; 
                         const barY = 725;
 
                         ctx.shadowBlur = 0;
