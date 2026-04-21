@@ -2870,7 +2870,12 @@
             if (isMobile) {
                 const controls = document.getElementById('mobile-controls');
                 if (gameState === 'PLAYING') {
-                    if (controls.style.display !== 'block') controls.style.display = 'block';
+                    if (controls.style.display !== 'block') {
+                        controls.style.display = 'block';
+                        // CRITICAL FIX: Recalculate button centers right after making them visible!
+                        // They now have actual width and height in the DOM.
+                        updateButtonCenters(); 
+                    }
                 } else {
                     if (controls.style.display !== 'none') controls.style.display = 'none';
                 }
@@ -2892,7 +2897,7 @@
 
         function resizeCanvas() {
             // Implement mobile DPR cap
-            const maxDpr = isMobile ? 1.0 : (window.devicePixelRatio || 1);
+            const maxDpr = isMobile ? 1.5 : (window.devicePixelRatio || 1);
             
             canvas.width = window.innerWidth * maxDpr;
             canvas.height = window.innerHeight * maxDpr;
