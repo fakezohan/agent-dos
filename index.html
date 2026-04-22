@@ -439,13 +439,13 @@
         let chefShrimps = [], chefKnives = [];
         const gameEvents = [
             { kills: 0, type: 'woman', iconKey: 'womanEvent', triggered: false },
-            { kills: 2, type: 'priest', iconKey: 'priestEvent', triggered: false },
-            { kills: 6, type: 'monk', iconKey: 'monkEvent', triggered: false },
-            { kills: 12, type: 'bear', iconKey: 'bearEvent', triggered: false },
-            { kills: 20, type: 'kfc', iconKey: 'kfcEvent', triggered: false },
-            { kills: 30, type: 'chef', iconKey: 'chefEvent', triggered: false },
-            { kills: 42, type: 'armoredWoman', iconKey: 'armoredWomanEvent', triggered: false },
-            { kills: 56, type: 'downBoy', iconKey: 'downBoyEvent', triggered: false }
+            { kills: 4, type: 'priest', iconKey: 'priestEvent', triggered: false },
+            { kills: 8, type: 'monk', iconKey: 'monkEvent', triggered: false },
+            { kills: 14, type: 'bear', iconKey: 'bearEvent', triggered: false },
+            { kills: 22, type: 'kfc', iconKey: 'kfcEvent', triggered: false },
+            { kills: 32, type: 'chef', iconKey: 'chefEvent', triggered: false },
+            { kills: 44, type: 'armoredWoman', iconKey: 'armoredWomanEvent', triggered: false },
+            { kills: 58, type: 'downBoy', iconKey: 'downBoyEvent', triggered: false }
         ];
 
         let bulletWidth = 0, bulletHeight = 0, starWidth = 0, starHeight = 0, crossWidth = 0, crossHeight = 0;
@@ -2727,21 +2727,22 @@
                 ctx.fillText(timeText, logicalViewW / 2, 230 * GAME_CFG.WORLD_SCALE);
 
                 // --- EVENT PROGRESS BAR ---
-                const eventBarY = 380 * GAME_CFG.WORLD_SCALE;
+                const eventBarY = 300 * GAME_CFG.WORLD_SCALE;
                 const eventBarW = 660 * GAME_CFG.WORLD_SCALE;
-                const eventBarX = logicalViewW / 2 - eventBarW / 2;
+                const distanceFromRightEdge = 50 * GAME_CFG.WORLD_SCALE
+                const eventBarX = logicalViewW - eventBarW - distanceFromRightEdge;
 
                 ctx.beginPath();
                 ctx.moveTo(eventBarX, eventBarY);
                 ctx.lineTo(eventBarX + eventBarW, eventBarY);
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = 'yellow';
                 ctx.stroke();
 
                 for (let e of gameEvents) {
                     let diff = e.kills - enemiesKilled;
                     if (diff >= -15 && diff <= 15) {
-                        let evX = logicalViewW / 2 + (diff / 15) * (eventBarW / 2);
+                        let evX = logicalViewW - eventBarW / 2 - distanceFromRightEdge + (diff / 15) * (eventBarW / 2);
                         let img = assets.images[e.iconKey];
                         if (img && img.width > 0) {
                             if (e.type === 'chef') {
@@ -2765,7 +2766,7 @@
                 if (centerHpImg && centerHpImg.width > 0) {
                     const centerHpW = centerHpImg.width * 0.064 * GAME_CFG.WORLD_SCALE;
                     const centerHpH = centerHpImg.height * 0.064 * GAME_CFG.WORLD_SCALE;
-                    ctx.drawImage(centerHpImg, logicalViewW / 2 - centerHpW / 2, eventBarY - centerHpH / 2, centerHpW, centerHpH);
+                    ctx.drawImage(centerHpImg, logicalViewW - eventBarW / 2 - distanceFromRightEdge - centerHpW / 2, eventBarY - centerHpH / 2, centerHpW, centerHpH);
                 }
                 // --- END EVENT PROGRESS BAR ---
                 
