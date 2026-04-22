@@ -2727,7 +2727,7 @@
                 ctx.fillText(timeText, logicalViewW / 2, 230 * GAME_CFG.WORLD_SCALE);
 
                 // --- EVENT PROGRESS BAR ---
-                const eventBarY = 320 * GAME_CFG.WORLD_SCALE;
+                const eventBarY = 380 * GAME_CFG.WORLD_SCALE;
                 const eventBarW = 660 * GAME_CFG.WORLD_SCALE;
                 const eventBarX = logicalViewW / 2 - eventBarW / 2;
 
@@ -2745,13 +2745,13 @@
                         let img = assets.images[e.iconKey];
                         if (img && img.width > 0) {
                             if (e.type === 'chef') {
-                                const targetEvIconHeight = 108 * GAME_CFG.WORLD_SCALE;
+                                const targetEvIconHeight = 143 * GAME_CFG.WORLD_SCALE;
                                 let ratio = img.width / img.height;
                                 let evDrawH = targetEvIconHeight;
                                 let evDrawW = evDrawH * ratio;
                                 ctx.drawImage(img, evX - evDrawW/2, eventBarY - evDrawH * 3 / 5, evDrawW, evDrawH);
                             } else {
-                                const targetEvIconHeight = 72 * GAME_CFG.WORLD_SCALE;
+                                const targetEvIconHeight = 94 * GAME_CFG.WORLD_SCALE;
                                 let ratio = img.width / img.height;
                                 let evDrawH = targetEvIconHeight;
                                 let evDrawW = evDrawH * ratio;
@@ -2763,8 +2763,8 @@
 
                 const centerHpImg = assets.images.health;
                 if (centerHpImg && centerHpImg.width > 0) {
-                    const centerHpW = centerHpImg.width * 0.048 * GAME_CFG.WORLD_SCALE;
-                    const centerHpH = centerHpImg.height * 0.048 * GAME_CFG.WORLD_SCALE;
+                    const centerHpW = centerHpImg.width * 0.064 * GAME_CFG.WORLD_SCALE;
+                    const centerHpH = centerHpImg.height * 0.064 * GAME_CFG.WORLD_SCALE;
                     ctx.drawImage(centerHpImg, logicalViewW / 2 - centerHpW / 2, eventBarY - centerHpH / 2, centerHpW, centerHpH);
                 }
                 // --- END EVENT PROGRESS BAR ---
