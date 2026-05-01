@@ -509,6 +509,13 @@
             let handledSwapTouches = new Set();
 
             const processTouches = (e) => {
+                // IMPORTANT: Directly resume AudioContext inside a trusted user gesture listener
+                if (e.type === 'touchstart' || e.type === 'touchend') {
+                    if (audioCtx.state === 'suspended') {
+                        audioCtx.resume();
+                    }
+                }
+
                 if (e.type === 'touchend') {
                     tryEnterFullscreen();
                 }
@@ -517,20 +524,12 @@
                 if (gameState === 'GAMEOVER') {
                     if (!isInterpolatingGameOver && e.type === 'touchend') {
                         resetGame();
-                        if (assets.audio.bgMusic) {
-                            assets.audio.bgMusic.play().catch(console.warn);
-                            musicStarted = true;
-                        }
                     }
                     return; // Prevent touchstart/move from setting mobile keys
                 }
 
                 if (gameState === 'TAP_TO_START') {
                     if (e.type === 'touchend') {
-                        if (!musicStarted && assets.audio.bgMusic) {
-                            assets.audio.bgMusic.play().catch(console.warn);
-                            musicStarted = true;
-                        }
                         gameState = 'PLAYING';
                     }
                     return; 
@@ -600,12 +599,13 @@
         }
 
         window.addEventListener('keydown', (e) => {
+            // IMPORTANT: Directly resume AudioContext inside a trusted user gesture listener
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
             if (gameState === 'TAP_TO_START') {
                 tryEnterFullscreen();
-                if (!musicStarted && assets.audio.bgMusic) {
-                    assets.audio.bgMusic.play().catch(console.warn);
-                    musicStarted = true;
-                }
                 gameState = 'PLAYING';
             }
 
@@ -619,12 +619,13 @@
         });
 
         window.addEventListener('mousedown', (e) => {
+            // IMPORTANT: Directly resume AudioContext inside a trusted user gesture listener
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
             if (gameState === 'TAP_TO_START') {
                 tryEnterFullscreen();
-                if (!musicStarted && assets.audio.bgMusic) {
-                    assets.audio.bgMusic.play().catch(console.warn);
-                    musicStarted = true;
-                }
                 gameState = 'PLAYING';
             }
         });
@@ -1026,10 +1027,6 @@
                 } else {
                     if (keys.p) {
                          resetGame();
-                         if (assets.audio.bgMusic) {
-                             assets.audio.bgMusic.play().catch(console.warn);
-                             musicStarted = true;
-                         }
                     }
                 }
                 return; 
@@ -1305,11 +1302,17 @@
                 }
             }
 
+            // CRITICAL FIX: Trigger background music explicitly on the pistol pickup!
             if (!pistol.pickedUp && pistol.width > 0) {
                 pistol.floatY = Math.sin(frameTimeNow * pistol.floatSpeed) * pistol.floatAmplitude;
                 if (player.x < pistol.x + pistol.width && pRightEdge > pistol.x && player.y < pistol.y + pistol.height && player.y + player.height > pistol.y) {
                     pistol.pickedUp = true; pistol.ammo = pistol.maxAmmo; 
                     playSound('pickup');
+                    
+                    if (!musicStarted && assets.audio.bgMusic) {
+                        assets.audio.bgMusic.play().catch(console.warn);
+                        musicStarted = true;
+                    }
                 }
             }
 
